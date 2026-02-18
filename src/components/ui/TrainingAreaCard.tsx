@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, Image, ImageSourcePropType } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { FocusableCard } from './FocusableCard';
 import { useTheme } from '../../theme';
@@ -7,7 +7,7 @@ import { rs } from '../../theme/responsive';
 
 interface TrainingAreaCardProps {
     title: string;
-    imageUrl?: string;
+    image?: ImageSourcePropType | string;
     iconName?: string;
     onPress: () => void;
     width?: number;
@@ -16,7 +16,7 @@ interface TrainingAreaCardProps {
 
 export const TrainingAreaCard: React.FC<TrainingAreaCardProps> = ({
     title,
-    imageUrl,
+    image,
     iconName = 'fitness-center',
     onPress,
     width = rs(250),
@@ -25,10 +25,10 @@ export const TrainingAreaCard: React.FC<TrainingAreaCardProps> = ({
     const { theme } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
 
-    // Fallback if no image
-    const imageSource = imageUrl
-        ? { uri: imageUrl }
-        : null;
+    // Resolve image source
+    const imageSource = typeof image === 'string'
+        ? { uri: image }
+        : image;
 
     return (
         <FocusableCard
@@ -41,29 +41,42 @@ export const TrainingAreaCard: React.FC<TrainingAreaCardProps> = ({
                     width,
                     height,
                     borderRadius: rs(10),
-                    borderWidth: isFocused ? rs(4) : rs(2),
-                    borderColor: isFocused ? theme.colors.primary : 'rgba(100,100,100,0.5)',
-                    backgroundColor: theme.colors.surfaceVariant,
+                    borderWidth: 0,
+                    borderColor: 'transparent',
+                    backgroundColor: 'transparent', // Handler by inner
                 },
             ]}
         >
-            {imageSource ? (
-                <ImageBackground
-                    source={imageSource}
-                    style={styles.imageBackground}
-                    imageStyle={{ borderRadius: rs(8) }}
-                >
-                    <View style={[styles.overlay, { backgroundColor: isFocused ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,0.3)' }]}>
-                        {/* Title at bottom */}
-                        <Text style={styles.title}>{title}</Text>
+            <View
+                style={[
+                    styles.cardContent,
+                    {
+                        borderRadius: rs(10),
+                        borderWidth: isFocused ? rs(4) : rs(2),
+                        borderColor: isFocused ? theme.colors.primary : 'rgba(100,100,100,0.5)',
+                        backgroundColor: theme.colors.surfaceVariant,
+                    }
+                ]}
+            >
+                {imageSource ? (
+                    <View style={{ flex: 1, backgroundColor: theme.colors.surface }}>
+                        <Image
+                            source={imageSource}
+                            style={[StyleSheet.absoluteFill, { borderRadius: rs(8) }]}
+                            resizeMode="cover"
+                        />
+                        <View style={[styles.overlay, { backgroundColor: isFocused ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,0.3)' }]}>
+                            {/* Title at bottom */}
+                            <Text style={styles.title}>{title}</Text>
+                        </View>
                     </View>
-                </ImageBackground>
-            ) : (
-                <View style={styles.fallbackContainer}>
-                    <Icon name={iconName} size={rs(64)} color={theme.colors.textSecondary} />
-                    <Text style={[styles.title, { textAlign: 'center' }]}>{title}</Text>
-                </View>
-            )}
+                ) : (
+                    <View style={styles.fallbackContainer}>
+                        <Icon name={iconName} size={rs(64)} color={theme.colors.textSecondary} />
+                        <Text style={[styles.title, { textAlign: 'center' }]}>{title}</Text>
+                    </View>
+                )}
+            </View>
         </FocusableCard>
     );
 };
@@ -103,4 +116,9 @@ const styles = StyleSheet.create({
         textShadowOffset: { width: 0, height: 1 },
         textShadowRadius: 3,
     },
+    cardContent: {
+        flex: 1,
+        overflow: 'hidden',
+    },
+    // ... rest
 });

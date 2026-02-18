@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
+import { useAuthStore } from '../../store/useAuthStore';
 import { RoleCard } from '../../components/auth/RoleCard';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation';
@@ -36,6 +37,12 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'RoleSelect'>;
 
 export default function RoleSelectScreen({ navigation }: Props) {
     const { theme } = useTheme();
+    const setRole = useAuthStore(state => state.setRole);
+
+    const handleRoleSelect = async (role: 'student' | 'dojo' | 'admin') => {
+        await setRole(role);
+        navigation.navigate('Login');
+    };
 
     return (
         <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -66,17 +73,17 @@ export default function RoleSelectScreen({ navigation }: Props) {
                     <RoleCard
                         title="Students"
                         Icon={StudentIcon}
-                        onPress={() => navigation.navigate('Login')}
+                        onPress={() => handleRoleSelect('student')}
                     />
                     <RoleCard
                         title="Dojo Cast"
                         Icon={DojoIcon}
-                        onPress={() => { }}
+                        onPress={() => handleRoleSelect('dojo')}
                     />
                     <RoleCard
                         title="Admin"
                         Icon={AdminIcon}
-                        onPress={() => { }}
+                        onPress={() => handleRoleSelect('admin')}
                     />
                 </View>
             </View>

@@ -11,12 +11,13 @@ import LoginScreen from '../screens/auth/LoginScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 
 // Student Screens
-import HomeScreen from '../screens/student/HomeScreen';
-import AnnouncementsScreen from '../screens/student/AnnouncementsScreen';
-import AnnouncementDetailScreen from '../screens/student/AnnouncementDetailScreen';
-import SearchProgramScreen from '../screens/student/SearchProgramScreen';
-import VideoListScreen from '../screens/student/VideoListScreen';
-import VideoPlayerScreen from '../screens/student/VideoPlayerScreen';
+import StudentHomeScreen from '../screens/student/HomeScreen';
+
+// Dojo Screens
+import DojoHomeScreen from '../screens/dojo/DojoHomeScreen';
+
+// Admin Screens
+import AdminHomeScreen from '../screens/admin/AdminHomeScreen';
 
 export type AuthStackParamList = {
     RoleSelect: undefined;
@@ -26,28 +27,20 @@ export type AuthStackParamList = {
 
 export type StudentStackParamList = {
     Home: undefined;
-    Announcements: undefined;
-    SearchProgram: undefined;
-    ProgramDetail: {
-        categoryId: string;
-        programName?: string;
-        categoryName?: string;
-    };
-    VideoPlayer: {
-        videoUrl: string;
-        title?: string;
-    };
-    AnnouncementDetail: {
-        announcementId: string;
-        title: string;
-        description: string;
-        createdAt: string;
-        authorName?: string;
-    };
+};
+
+export type DojoStackParamList = {
+    Home: undefined;
+};
+
+export type AdminStackParamList = {
+    Home: undefined;
 };
 
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
 const StudentStack = createNativeStackNavigator<StudentStackParamList>();
+const DojoStack = createNativeStackNavigator<DojoStackParamList>();
+const AdminStack = createNativeStackNavigator<AdminStackParamList>();
 
 const AuthNavigator = () => {
     const { theme } = useTheme();
@@ -76,18 +69,43 @@ const StudentNavigator = () => {
                 animation: 'fade',
             }}
         >
-            <StudentStack.Screen name="Home" component={HomeScreen} />
-            <StudentStack.Screen name="Announcements" component={AnnouncementsScreen} />
-            <StudentStack.Screen name="SearchProgram" component={SearchProgramScreen} />
-            <StudentStack.Screen name="ProgramDetail" component={VideoListScreen} />
-            <StudentStack.Screen name="VideoPlayer" component={VideoPlayerScreen} />
-            <StudentStack.Screen name="AnnouncementDetail" component={AnnouncementDetailScreen} />
+            <StudentStack.Screen name="Home" component={StudentHomeScreen} />
         </StudentStack.Navigator>
     );
 };
 
+const DojoNavigator = () => {
+    const { theme } = useTheme();
+    return (
+        <DojoStack.Navigator
+            screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: theme.colors.background },
+                animation: 'fade',
+            }}
+        >
+            <DojoStack.Screen name="Home" component={DojoHomeScreen} />
+        </DojoStack.Navigator>
+    );
+};
+
+const AdminNavigator = () => {
+    const { theme } = useTheme();
+    return (
+        <AdminStack.Navigator
+            screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: theme.colors.background },
+                animation: 'fade',
+            }}
+        >
+            <AdminStack.Screen name="Home" component={AdminHomeScreen} />
+        </AdminStack.Navigator>
+    );
+};
+
 export const RootNavigator = () => {
-    const { isAuthenticated, isInitialized, loadStoredAuth } = useAuthStore();
+    const { isAuthenticated, isInitialized, loadStoredAuth, selectedRole } = useAuthStore();
     const { theme } = useTheme();
 
     useEffect(() => {
@@ -104,7 +122,13 @@ export const RootNavigator = () => {
 
     return (
         <NavigationContainer>
-            {isAuthenticated ? <StudentNavigator /> : <AuthNavigator />}
+            {isAuthenticated ? (
+                selectedRole === 'dojo' ? <DojoNavigator /> :
+                    selectedRole === 'admin' ? <AdminNavigator /> :
+                        <StudentNavigator />
+            ) : (
+                <AuthNavigator />
+            )}
         </NavigationContainer>
     );
 };

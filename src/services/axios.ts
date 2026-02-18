@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
     ACCESS_TOKEN: 'access_token',
     REFRESH_TOKEN: 'refresh_token',
     USER_DATA: 'user_data',
+    SELECTED_ROLE: 'selected_role',
 } as const;
 
 /**
@@ -45,6 +46,19 @@ export const secureStorage = {
         }
     },
 
+    async setSelectedRole(role: string): Promise<void> {
+        await Keychain.setGenericPassword('role', role, { service: STORAGE_KEYS.SELECTED_ROLE });
+    },
+
+    async getSelectedRole(): Promise<string | null> {
+        try {
+            const credentials = await Keychain.getGenericPassword({ service: STORAGE_KEYS.SELECTED_ROLE });
+            return credentials ? credentials.password : null;
+        } catch {
+            return null;
+        }
+    },
+
     // Storage for non-sensitive user data (using Keychain simply for unified storage API on TV)
     async setUserData(userData: string): Promise<void> {
         await Keychain.setGenericPassword('user', userData, { service: STORAGE_KEYS.USER_DATA });
@@ -64,6 +78,7 @@ export const secureStorage = {
             Keychain.resetGenericPassword({ service: STORAGE_KEYS.ACCESS_TOKEN }),
             Keychain.resetGenericPassword({ service: STORAGE_KEYS.REFRESH_TOKEN }),
             Keychain.resetGenericPassword({ service: STORAGE_KEYS.USER_DATA }),
+            Keychain.resetGenericPassword({ service: STORAGE_KEYS.SELECTED_ROLE }),
         ]);
     },
 };

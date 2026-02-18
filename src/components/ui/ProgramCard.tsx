@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, Image, ImageSourcePropType } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { FocusableCard } from './FocusableCard';
 import { useTheme } from '../../theme';
 import { rs, wp } from '../../theme/responsive';
+import PlayButton from '../../../assets/icons/play_button.svg';
 
 interface ProgramCardProps {
     title: string;
-    imageUrl?: string;
+    image?: ImageSourcePropType | string;
     progress?: number;
     onPress: () => void;
     width?: number;
@@ -16,7 +17,7 @@ interface ProgramCardProps {
 
 export const ProgramCard: React.FC<ProgramCardProps> = ({
     title,
-    imageUrl,
+    image,
     progress = 0,
     onPress,
     width = rs(380), // Approx w-96
@@ -25,10 +26,12 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
     const { theme } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
 
-    // Fallback image if none provided
-    const imageSource = imageUrl
-        ? { uri: imageUrl }
-        : { uri: 'https://images.unsplash.com/photo-1544367563-12123d81a13d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80' };
+    // Resolve image source
+    const imageSource = typeof image === 'string'
+        ? { uri: image }
+        : image
+            ? image
+            : { uri: 'https://images.unsplash.com/photo-1544367563-12123d81a13d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80' };
 
     return (
         <FocusableCard
@@ -46,44 +49,57 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
                 },
             ]}
         >
-            <ImageBackground
-                source={imageSource}
-                style={styles.imageBackground}
-                imageStyle={{ borderRadius: rs(8) }} // Inner radius slightly less
+            <View
+                style={[
+                    styles.cardContent,
+                    {
+                        borderRadius: rs(10),
+                        borderWidth: isFocused ? rs(4) : 0, // Border only on focus
+                        borderColor: isFocused ? theme.colors.primary : 'transparent',
+                    }
+                ]}
             >
-                <View style={[styles.overlay, { backgroundColor: isFocused ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.4)' }]}>
-                    {/* Center Icon */}
-                    <View style={styles.centerIcon}>
-                        <View style={styles.playIconCircle}>
-                            <Icon name="play-arrow" size={rs(32)} color={theme.colors.primary} />
-                        </View>
-                    </View>
+                {/* Image Layer */}
+                <View style={{ flex: 1, backgroundColor: theme.colors.surface }}>
+                    <Image
+                        source={imageSource}
+                        style={[StyleSheet.absoluteFill, { borderRadius: rs(8) }]}
+                        resizeMode="cover"
+                    />
 
-                    {/* Bottom Info */}
-                    <View style={styles.footer}>
-                        <View style={styles.textRow}>
-                            <Text style={styles.title} numberOfLines={1}>
-                                {title}
-                            </Text>
-                            <Text style={styles.percentage}>
-                                {Math.round(progress)}%
-                            </Text>
+                    {/* Overlay Layer */}
+                    <View style={[styles.overlay, { backgroundColor: isFocused ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.4)' }]}>
+                        {/* Center Icon */}
+                        <View style={styles.centerIcon}>
+                            <PlayButton width={rs(64)} height={rs(64)} />
                         </View>
-                        {/* Progress Bar */}
-                        <View style={[styles.progressBarTrack, { backgroundColor: theme.colors.border }]}>
-                            <View
-                                style={[
-                                    styles.progressBarFill,
-                                    {
-                                        width: `${Math.min(100, Math.max(0, progress))}%`,
-                                        backgroundColor: theme.colors.primary,
-                                    },
-                                ]}
-                            />
+
+                        {/* Bottom Info */}
+                        <View style={styles.footer}>
+                            <View style={styles.textRow}>
+                                <Text style={styles.title} numberOfLines={1}>
+                                    {title}
+                                </Text>
+                                <Text style={styles.percentage}>
+                                    {Math.round(progress)}%
+                                </Text>
+                            </View>
+                            {/* Progress Bar */}
+                            <View style={[styles.progressBarTrack, { backgroundColor: theme.colors.border }]}>
+                                <View
+                                    style={[
+                                        styles.progressBarFill,
+                                        {
+                                            width: `${Math.min(100, Math.max(0, progress))}%`,
+                                            backgroundColor: theme.colors.primary,
+                                        },
+                                    ]}
+                                />
+                            </View>
                         </View>
                     </View>
                 </View>
-            </ImageBackground>
+            </View>
         </FocusableCard>
     );
 };
@@ -150,4 +166,10 @@ const styles = StyleSheet.create({
         height: '100%',
         borderRadius: rs(3),
     },
+    cardContent: {
+        flex: 1,
+        overflow: 'hidden', // Strictly clip content/image
+        backgroundColor: 'black', // fallback
+    },
+    // ... rest of styles
 });

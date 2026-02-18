@@ -56,4 +56,5 @@ export interface AuthState {
     isLoading: boolean;
     isInitialized: boolean;
     apiError: string | null;
+    selectedRole?: 'student' | 'dojo' | 'admin';
 }

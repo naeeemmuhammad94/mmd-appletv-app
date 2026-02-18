@@ -59,19 +59,13 @@ export const FocusableCard: React.FC<FocusableCardProps> = ({
             onFocus={handleFocus}
             onBlur={handleBlur}
             style={({ pressed, focused }) => [
-                styles.container,
                 style,
-                focused && {
-                    borderColor: theme.colors.focusBorder,
-                    backgroundColor: theme.colors.surfaceVariant, // Lighten bg on focus
-                    ...styles.focused,
-                },
                 focused && focusedStyle,
             ]}
             {...props}
         >
             {({ pressed, focused }) => (
-                <Animated.View style={[{ transform: [{ scale }] }]}>
+                <Animated.View style={[{ flex: 1, transform: [{ scale }] }]}>
                     {typeof children === 'function'
                         ? children({ focused, pressed })
                         : children}

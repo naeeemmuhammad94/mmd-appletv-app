@@ -13,6 +13,7 @@ interface AuthActions {
     loadStoredAuth: () => Promise<void>;
     reset: () => void;
     clearError: () => void;
+    setRole: (role: 'student' | 'dojo' | 'admin') => Promise<void>;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -24,10 +25,16 @@ const initialState: AuthState = {
     isLoading: false,
     isInitialized: false,
     apiError: null,
+    selectedRole: undefined, // Add selectedRole to state
 };
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
     ...initialState,
+
+    setRole: async (role: 'student' | 'dojo' | 'admin') => {
+        await secureStorage.setSelectedRole(role);
+        set({ selectedRole: role });
+    },
 
     /**
      * Login with userName and password
@@ -97,13 +104,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         try {
             // API call (fire and forget)
             authService.logoutUser().catch(() => { });
-        } finally {
-            // Clear local storage
-            await secureStorage.clearAll();
 
+            // Clear local storage
+            await secureStorage.clearAll().catch(e => console.error('Clear storage failed', e));
+        } catch (e) {
+            console.error('Logout error', e);
+        } finally {
             set({
                 ...initialState,
+                // Explicitly reset critical flags
+                user: null,
+                token: null,
+                isAuthenticated: false,
+                selectedRole: undefined,
                 isInitialized: true,
+                isLoading: false,
             });
         }
     },
@@ -114,9 +129,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     loadStoredAuth: async () => {
         try {
             set({ isLoading: true });
-            const [token, userData] = await Promise.all([
+            const [token, userData, role] = await Promise.all([
                 secureStorage.getToken(),
                 secureStorage.getUserData(),
+                secureStorage.getSelectedRole(),
             ]);
 
             if (token && userData) {
@@ -127,6 +143,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                     isAuthenticated: true,
                     isInitialized: true,
                     isLoading: false,
+                    selectedRole: (role as 'student' | 'dojo' | 'admin') || undefined,
                 });
 
                 // Optionally verify token validity here with getCurrentUser()
