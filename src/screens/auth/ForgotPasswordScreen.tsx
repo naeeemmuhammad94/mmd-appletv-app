@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Platform, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../theme';
 import { rs, wp } from '../../theme/responsive';
 import { TVTextInput } from '../../components/ui/TVTextInput';
@@ -15,40 +15,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Logo from '../../../assets/icons/logo.svg';
 
-// ─── Figma Inspector Values ──────────────────────────────────────
-const SCREEN_THEME = {
-    layout: {
-        containerWidth: rs(1680), // w-[1680px]
-        headerWidth: rs(592),     // w-[592px]
-        cardContentWidth: rs(1459), // w-[1459px]
-        cardHeight: rs(517),      // h-[517px]
-        borderRadius: rs(40),     // rounded-[40px]
-        inputHeight: rs(96),      // h-24 -> 96px
-        inputRadius: rs(16),      // rounded-2xl -> 16px
-    },
-    spacing: {
-        mainGap: rs(64),          // gap-16 -> 64px
-        headerGap: rs(10),        // gap-2.5 -> 10px
-        headerIconGap: rs(14),    // gap-3.5 -> 14px
-        cardInnerGap: rs(96),     // gap-24 -> 96px
-        backButtonTop: rs(370),   // top-[370px] absolute
-    },
-    typography: {
-        headerSubtitleSize: rs(36), // text-4xl -> 36px
-        labelSize: rs(48),        // text-5xl -> 48px
-        buttonTextSize: rs(48),   // text-5xl -> 48px
-        logoSize: rs(64),         // w-16 h-16 -> 64px
-    },
-    colors: {
-        headerText: 'rgba(255, 255, 255, 0.6)', // text-white/60
-        cardBg: 'rgba(31, 41, 55, 0.7)',        // bg-gray-800/70
-        inputBg: 'rgba(0, 0, 0, 0.2)',          // bg-black/20
-        borderColor: '#A3A3A3',                 // border-neutral-400
-        blueButtonStart: '#3B82F6',             // from-blue-500
-        blueButtonEnd: '#1E40AF',               // to-blue-800
-        backButtonText: '#3B82F6',              // text-blue-500
-    },
-} as const;
+import { AUTH_SCREEN_THEME as SCREEN_THEME } from '../../theme/authTheme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPassword'>;
 
@@ -196,7 +163,7 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                         // Adjust height dynamically if success state is different,
                         // but design implies fixed size for form. Success state might reuse or differ.
                         // I will stick to fixed height for form.
-                        height: isSuccess ? undefined : SCREEN_THEME.layout.cardHeight,
+                        height: isSuccess ? undefined : SCREEN_THEME.layout.cardHeightForgotPassword,
                     }
                 ]}>
                     {isSuccess ? renderSuccessState() : renderRequestState()}
@@ -261,7 +228,7 @@ const styles = StyleSheet.create({
         top: 69, // top-[69px]
         left: 110, // left-[110px]
         width: SCREEN_THEME.layout.cardContentWidth,
-        gap: SCREEN_THEME.spacing.cardInnerGap,
+        gap: SCREEN_THEME.spacing.cardInnerGapLarge,
     },
     inputGroup: {
         gap: rs(28), // Same as Login gap-7

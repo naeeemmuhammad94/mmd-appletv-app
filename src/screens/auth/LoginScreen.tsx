@@ -13,42 +13,7 @@ import { AuthStackParamList } from '../../navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Logo from '../../../assets/icons/logo.svg';
 
-// ─── Figma Inspector Values ──────────────────────────────────────
-const SCREEN_THEME = {
-    layout: {
-        containerWidth: rs(1680), // w-[1680px]
-        headerWidth: rs(592),     // w-[592px]
-        cardContentWidth: rs(1459), // w-[1459px]
-        cardHeight: rs(600),      // h-[600px]
-        borderRadius: rs(40),     // rounded-[40px]
-        inputHeight: rs(96),      // h-24 -> 96px
-        inputRadius: rs(16),      // rounded-2xl -> 16px
-    },
-    spacing: {
-        mainGap: rs(64),          // gap-16 -> 64px
-        headerGap: rs(10),        // gap-2.5 -> 10px
-        headerIconGap: rs(14),    // gap-3.5 -> 14px
-        cardInnerGap: rs(28),     // gap-7 -> 28px
-        forgotPasswordTop: rs(482), // top-[482px] absolute
-        showButtonTop: rs(16),    // top-[16px] absolute inside input
-    },
-    typography: {
-        headerSubtitleSize: rs(36), // text-4xl -> 36px
-        labelSize: rs(48),        // text-5xl -> 48px
-        buttonTextSize: rs(48),   // text-5xl -> 48px
-        showTextSize: rs(36),     // text-4xl -> 36px
-        logoSize: rs(64),         // w-16 h-16 -> 64px
-    },
-    colors: {
-        headerText: 'rgba(255, 255, 255, 0.6)', // text-white/60
-        cardBg: 'rgba(31, 41, 55, 0.7)',        // bg-gray-800/70
-        inputBg: 'rgba(0, 0, 0, 0.2)',          // bg-black/20
-        borderColor: '#A3A3A3',                 // border-neutral-400
-        blueButtonStart: '#3B82F6',             // from-blue-500
-        blueButtonEnd: '#1E40AF',               // to-blue-800
-        forgotPasswordText: '#3B82F6',          // text-blue-500
-    },
-} as const;
+import { AUTH_SCREEN_THEME as SCREEN_THEME } from '../../theme/authTheme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -102,6 +67,14 @@ export default function LoginScreen({ navigation }: Props) {
                 {/* ── Main Card ── */}
                 <View style={[styles.loginCard, { borderColor: SCREEN_THEME.colors.borderColor }]}>
                     <View style={styles.cardContent}>
+                        {/* Error Message */}
+                        {(apiError || localError) && (
+                            <View style={styles.errorContainer}>
+                                <Text style={styles.errorText}>
+                                    {apiError || localError}
+                                </Text>
+                            </View>
+                        )}
                         {/* Username Field */}
                         <View style={styles.inputGroup}>
                             <Text style={[styles.label, { color: theme.colors.text }]}>Username</Text>
@@ -316,6 +289,21 @@ const styles = StyleSheet.create({
         fontWeight: '500',
         fontSize: SCREEN_THEME.typography.buttonTextSize,
         color: SCREEN_THEME.colors.forgotPasswordText,
+        textAlign: 'center',
+    },
+    errorContainer: {
+        width: '100%',
+        padding: rs(20),
+        backgroundColor: 'rgba(239, 68, 68, 0.2)', // red-500/20
+        borderRadius: rs(12),
+        borderWidth: 1,
+        borderColor: 'rgba(239, 68, 68, 0.5)', // red-500/50
+        marginBottom: rs(20),
+    },
+    errorText: {
+        color: '#FCA5A5', // red-300
+        fontSize: rs(32),
+        fontFamily: 'SF Pro Display',
         textAlign: 'center',
     },
 });

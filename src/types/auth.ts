@@ -29,6 +29,7 @@ export interface CurrentUser {
 
 export interface LoginPayload {
     userName: string;
+    email?: string; // Staging API requirement for students
     password: string;
     rememberMe?: boolean;
     rememberMeDays?: number;

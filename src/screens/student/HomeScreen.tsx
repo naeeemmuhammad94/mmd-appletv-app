@@ -22,11 +22,13 @@ import {
     ActivityIndicator,
     Pressable,
     Animated,
+    ImageBackground,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme';
+import LinearGradient from 'react-native-linear-gradient';
 import { rs, wp, hp } from '../../theme/responsive';
 import { useStudyContent, useStudyCategories } from '../../hooks/useStudy';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -39,6 +41,10 @@ import type { StudyContentItem, StudyCategory } from '../../types/study';
 
 type NavProp = NativeStackNavigationProp<StudentStackParamList>;
 
+// ─── Imports ─────────────────────────────────────────────────────────────────
+import { MOCK_PROGRAMS, MOCK_CATEGORIES } from '../../data/mockData';
+import { getImageUrl, getCategoryIcon } from '../../utils/imageUtils';
+
 // ── Tab definitions ──────────────────────────────────────────────────────────
 
 const TABS: TabItem[] = [
@@ -46,78 +52,6 @@ const TABS: TabItem[] = [
     { key: 'curriculum', label: 'Curriculum' },
     { key: 'announcements', label: 'Announcements' },
 ];
-
-// ── Mock / Fallback Data ─────────────────────────────────────────────────────
-
-const MOCK_PROGRAMS: StudyContentItem[] = [
-    {
-        _id: 'mock-1',
-        title: 'Karate Basics',
-        contentLink: 'https://example.com/video1.mp4',
-        category: { _id: 'cat-1', dojo: 'd1', name: 'Karate' },
-        order: 1,
-        tags: [{ _id: 't1', name: 'Beginner', type: 'level' }],
-    },
-    {
-        _id: 'mock-2',
-        title: 'Advanced Forms',
-        contentLink: 'https://example.com/video2.mp4',
-        category: { _id: 'cat-2', dojo: 'd1', name: 'Forms' },
-        order: 2,
-        tags: [{ _id: 't2', name: 'Advanced', type: 'level' }],
-    },
-    {
-        _id: 'mock-3',
-        title: 'Sparring Techniques',
-        contentLink: 'https://example.com/video3.mp4',
-        category: { _id: 'cat-3', dojo: 'd1', name: 'Sparring' },
-        order: 3,
-        tags: [{ _id: 't3', name: 'Intermediate', type: 'level' }],
-    },
-    {
-        _id: 'mock-4',
-        title: 'Weapons Training',
-        contentLink: 'https://example.com/video4.mp4',
-        category: { _id: 'cat-4', dojo: 'd1', name: 'Weapons' },
-        order: 4,
-        tags: [{ _id: 't4', name: 'Advanced', type: 'level' }],
-    },
-    {
-        _id: 'mock-5',
-        title: 'Fitness Conditioning',
-        contentLink: 'https://example.com/video5.mp4',
-        category: { _id: 'cat-5', dojo: 'd1', name: 'Fitness' },
-        order: 5,
-        tags: [{ _id: 't5', name: 'All Levels', type: 'level' }],
-    },
-];
-
-const MOCK_CATEGORIES: StudyCategory[] = [
-    { _id: 'cat-1', dojo: 'd1', name: 'Karate' },
-    { _id: 'cat-2', dojo: 'd1', name: 'Forms' },
-    { _id: 'cat-3', dojo: 'd1', name: 'Sparring' },
-    { _id: 'cat-4', dojo: 'd1', name: 'Weapons' },
-    { _id: 'cat-5', dojo: 'd1', name: 'Fitness' },
-];
-
-// ── Category icon fallbacks ──────────────────────────────────────────────────
-
-const CATEGORY_ICONS: Record<string, string> = {
-    'karate': 'sports-martial-arts',
-    'forms': 'self-improvement',
-    'sparring': 'sports-kabaddi',
-    'weapons': 'gavel',
-    'fitness': 'fitness-center',
-    'default': 'school',
-};
-
-function getCategoryIcon(name: string): string {
-    const key = name.toLowerCase();
-    return (
-        Object.entries(CATEGORY_ICONS).find(([k]) => key.includes(k))?.[1] ||
-        CATEGORY_ICONS.default
-    );
-}
 
 // ── Component ────────────────────────────────────────────────────────────────
 
@@ -264,46 +198,52 @@ const HomeScreen: React.FC = () => {
                 {/* ── Hero Section ─────────────────────────────────── */}
                 {heroItem && (
                     <View style={styles.heroSection}>
-                        <View
-                            style={[
-                                styles.heroBg,
-                                { backgroundColor: theme.colors.surfaceVariant, borderRadius: theme.borderRadius.lg },
-                            ]}
+                        <ImageBackground
+                            source={{ uri: getImageUrl(heroItem) }}
+                            style={styles.heroBg}
+                            imageStyle={{ borderRadius: theme.borderRadius.lg }}
                         >
-                            <View style={styles.heroOverlay}>
-                                <Text style={[styles.heroGreeting, { color: theme.colors.text, fontSize: theme.fontSize.h3 }]}>
-                                    Welcome back, {firstName}
-                                </Text>
-                                <Text style={[styles.heroSubtitle, { color: theme.colors.textSecondary, fontSize: theme.fontSize.body }]}>
-                                    Today's Training
-                                </Text>
-                                <Text numberOfLines={2} style={[styles.heroTitle, { color: theme.colors.text, fontSize: theme.fontSize.h2 }]}>
-                                    {heroItem.title}
-                                </Text>
-                                <Text style={[styles.heroCategory, { color: theme.colors.textSecondary, fontSize: theme.fontSize.caption }]}>
-                                    {heroItem.category.name}
-                                    {heroItem.tags?.length > 0 && ` · ${heroItem.tags[0].name}`}
-                                </Text>
-
-                                <View style={styles.heroActions}>
-                                    <FocusableCard
-                                        onPress={handleHeroPlay}
-                                        style={[styles.heroButton, { backgroundColor: theme.colors.primary }]}
+                            <LinearGradient
+                                colors={['transparent', 'rgba(0,0,0,0.6)', 'rgba(0,0,0,0.9)']}
+                                style={styles.heroGradient}
+                            >
+                                <View style={styles.heroContent}>
+                                    <Text style={[styles.heroLabel, { color: theme.colors.textSecondary }]}>
+                                        Today's Training
+                                    </Text>
+                                    <Text
+                                        numberOfLines={1}
+                                        style={[styles.heroTitle, { color: theme.colors.text }]}
                                     >
-                                        <Icon name="play-arrow" size={rs(28)} color="#FFFFFF" />
-                                        <Text style={styles.heroButtonText}>Continue Training</Text>
-                                    </FocusableCard>
+                                        {heroItem.title}
+                                    </Text>
+                                    <Text style={[styles.heroSubtitle, { color: theme.colors.textSecondary }]}>
+                                        {heroItem.category.name}
+                                        {heroItem.tags?.length > 0 && ` · ${heroItem.tags[0].name}`}
+                                    </Text>
 
-                                    <FocusableCard
-                                        onPress={handleHeroPlay}
-                                        style={[styles.heroButtonSecondary, { backgroundColor: 'transparent', borderColor: theme.colors.border }]}
-                                    >
-                                        <Icon name="replay" size={rs(24)} color={theme.colors.text} />
-                                        <Text style={[styles.heroButtonText, { color: theme.colors.text }]}>Restart</Text>
-                                    </FocusableCard>
+                                    <View style={styles.heroActions}>
+                                        <FocusableCard
+                                            onPress={handleHeroPlay}
+                                            style={[styles.heroButtonPrimary, { backgroundColor: theme.colors.primary }]}
+                                        >
+                                            <Icon name="play-arrow" size={rs(32)} color="#FFFFFF" />
+                                            <Text style={styles.heroButtonTextPrimary}>Continue Training</Text>
+                                        </FocusableCard>
+
+                                        <FocusableCard
+                                            onPress={handleHeroPlay}
+                                            style={styles.heroButtonSecondary}
+                                        >
+                                            <Icon name="replay" size={rs(28)} color={theme.colors.textSecondary} />
+                                            <Text style={[styles.heroButtonTextSecondary, { color: theme.colors.textSecondary }]}>
+                                                Restart
+                                            </Text>
+                                        </FocusableCard>
+                                    </View>
                                 </View>
-                            </View>
-                        </View>
+                            </LinearGradient>
+                        </ImageBackground>
                     </View>
                 )}
 
@@ -318,7 +258,7 @@ const HomeScreen: React.FC = () => {
                         renderItem={({ item }) => (
                             <ProgramCard
                                 title={item.title}
-                                imageUrl={item.event?.imageUrl}
+                                imageUrl={getImageUrl(item)}
                                 progress={0}
                                 onPress={() => handleProgramPress(item)}
                             />
@@ -365,7 +305,7 @@ const HomeScreen: React.FC = () => {
                             renderItem={({ item }) => (
                                 <ProgramCard
                                     title={item.title}
-                                    imageUrl={item.event?.imageUrl}
+                                    imageUrl={getImageUrl(item)}
                                     progress={0}
                                     onPress={() => handleProgramPress(item)}
                                 />
@@ -439,57 +379,72 @@ const styles = StyleSheet.create({
     // ── Hero
     heroSection: {
         paddingHorizontal: rs(60),
-        marginBottom: rs(32),
+        marginBottom: rs(40),
+        height: hp(55), // Taller hero
     },
     heroBg: {
+        flex: 1,
         width: '100%',
-        height: hp(42),
         justifyContent: 'flex-end',
     },
-    heroOverlay: {
-        padding: rs(40),
+    heroGradient: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        padding: rs(50),
+        borderRadius: rs(16),
     },
-    heroGreeting: {
-        fontWeight: '600',
-        marginBottom: rs(16),
+    heroContent: {
+        width: '50%', // Content takes left half
+        gap: rs(10),
     },
-    heroSubtitle: {
-        fontWeight: '500',
-        marginBottom: rs(8),
+    heroLabel: {
+        fontSize: rs(48), // "Today's Training"
+        fontWeight: 'bold',
+        fontFamily: 'SF Pro Display',
     },
     heroTitle: {
-        fontWeight: '700',
-        marginBottom: rs(8),
+        fontSize: rs(32), // "Fundamental Balance..."
+        fontWeight: '600',
+        marginBottom: rs(4),
     },
-    heroCategory: {
-        fontWeight: '400',
-        marginBottom: rs(24),
+    heroSubtitle: {
+        fontSize: rs(28), // "Videos 2 of 6"
+        fontWeight: '500',
+        marginBottom: rs(20),
     },
     heroActions: {
         flexDirection: 'row',
-        gap: rs(16),
+        gap: rs(24),
+        alignItems: 'center',
     },
-    heroButton: {
+    heroButtonPrimary: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: rs(8),
-        paddingHorizontal: rs(28),
-        paddingVertical: rs(14),
-        borderRadius: rs(12),
+        gap: rs(10),
+        paddingHorizontal: rs(40),
+        paddingVertical: rs(16),
+        borderRadius: rs(20),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    heroButtonTextPrimary: {
+        color: '#FFFFFF',
+        fontSize: rs(26),
+        fontWeight: '600',
     },
     heroButtonSecondary: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: rs(8),
-        paddingHorizontal: rs(28),
+        gap: rs(10),
+        paddingHorizontal: rs(20),
         paddingVertical: rs(14),
-        borderRadius: rs(12),
-        borderWidth: 1,
     },
-    heroButtonText: {
-        color: '#FFFFFF',
-        fontSize: rs(24),
-        fontWeight: '600',
+    heroButtonTextSecondary: {
+        fontSize: rs(26),
+        fontWeight: '500',
     },
     // ── Sections
     section: {

@@ -1,21 +1,17 @@
-/**
- * TrainingAreaCard – Square card for a study category
- * Shows category icon/image and title
- */
-
-import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, ImageBackground } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { FocusableCard } from './FocusableCard';
 import { useTheme } from '../../theme';
-import { rs, wp } from '../../theme/responsive';
+import { rs } from '../../theme/responsive';
 
 interface TrainingAreaCardProps {
     title: string;
     imageUrl?: string;
-    iconName?: string; // fallback MaterialIcons name
+    iconName?: string;
     onPress: () => void;
-    size?: number;
+    width?: number;
+    height?: number;
 }
 
 export const TrainingAreaCard: React.FC<TrainingAreaCardProps> = ({
@@ -23,87 +19,88 @@ export const TrainingAreaCard: React.FC<TrainingAreaCardProps> = ({
     imageUrl,
     iconName = 'fitness-center',
     onPress,
-    size = wp(14),
+    width = rs(250),
+    height = rs(280),
 }) => {
     const { theme } = useTheme();
+    const [isFocused, setIsFocused] = useState(false);
+
+    // Fallback if no image
+    const imageSource = imageUrl
+        ? { uri: imageUrl }
+        : null;
 
     return (
         <FocusableCard
             onPress={onPress}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
             style={[
                 styles.card,
                 {
-                    width: size,
-                    height: size,
-                    backgroundColor: theme.colors.surface,
-                    borderRadius: theme.borderRadius.lg,
+                    width,
+                    height,
+                    borderRadius: rs(10),
+                    borderWidth: isFocused ? rs(4) : rs(2),
+                    borderColor: isFocused ? theme.colors.primary : 'rgba(100,100,100,0.5)',
+                    backgroundColor: theme.colors.surfaceVariant,
                 },
             ]}
         >
-            <View style={styles.content}>
-                {imageUrl ? (
-                    <Image
-                        source={{ uri: imageUrl }}
-                        style={[styles.image, { width: size * 0.45, height: size * 0.45 }]}
-                        resizeMode="contain"
-                    />
-                ) : (
-                    <View
-                        style={[
-                            styles.iconContainer,
-                            {
-                                width: size * 0.45,
-                                height: size * 0.45,
-                                borderRadius: (size * 0.45) / 2,
-                                backgroundColor: theme.colors.surfaceVariant,
-                            },
-                        ]}
-                    >
-                        <Icon
-                            name={iconName}
-                            size={size * 0.22}
-                            color={theme.colors.primary}
-                        />
-                    </View>
-                )}
-                <Text
-                    numberOfLines={2}
-                    style={[
-                        styles.title,
-                        {
-                            color: theme.colors.text,
-                            fontSize: theme.fontSize.caption,
-                        },
-                    ]}
+            {imageSource ? (
+                <ImageBackground
+                    source={imageSource}
+                    style={styles.imageBackground}
+                    imageStyle={{ borderRadius: rs(8) }}
                 >
-                    {title}
-                </Text>
-            </View>
+                    <View style={[styles.overlay, { backgroundColor: isFocused ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,0.3)' }]}>
+                        {/* Title at bottom */}
+                        <Text style={styles.title}>{title}</Text>
+                    </View>
+                </ImageBackground>
+            ) : (
+                <View style={styles.fallbackContainer}>
+                    <Icon name={iconName} size={rs(64)} color={theme.colors.textSecondary} />
+                    <Text style={[styles.title, { textAlign: 'center' }]}>{title}</Text>
+                </View>
+            )}
         </FocusableCard>
     );
 };
 
 const styles = StyleSheet.create({
     card: {
-        overflow: 'hidden',
-        marginRight: rs(16),
+        marginRight: rs(24),
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
     },
-    content: {
+    imageBackground: {
+        flex: 1,
+        justifyContent: 'flex-end',
+    },
+    overlay: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        padding: rs(16),
+        backgroundColor: 'rgba(0,0,0,0.3)',
+    },
+    fallbackContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         padding: rs(16),
-        gap: rs(12),
-    },
-    image: {
-        borderRadius: rs(8),
-    },
-    iconContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
+        gap: rs(16),
     },
     title: {
-        fontWeight: '600',
-        textAlign: 'center',
+        fontSize: rs(32),
+        fontWeight: 'bold',
+        color: 'rgba(255,255,255,0.9)',
+        fontFamily: 'SF Pro Display',
+        textShadowColor: 'rgba(0,0,0,0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 3,
     },
 });

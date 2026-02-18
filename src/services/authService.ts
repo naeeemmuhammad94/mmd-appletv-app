@@ -12,14 +12,23 @@ import type { CurrentUser, LoginPayload, ForgotPasswordPayload, CommonApiRespons
  * Login user with userName and password
  */
 export async function loginUser(payload: LoginPayload): Promise<CommonApiResponse<CurrentUser>> {
+    const requestPayload = {
+        ...payload,
+        // Staging API requires both userName and email for student login
+        email: payload.email || payload.userName
+    };
+
+    console.log('[AuthService] Logging in with payload (password hidden):', { ...requestPayload, password: '***' });
     try {
         const response = await axiosInstance.post<CommonApiResponse<CurrentUser>>(
             ApiEndpoints.Login,
-            payload
+            requestPayload
         );
+        console.log('[AuthService] Login response:', response.data);
         return response.data;
     } catch (error) {
         const axiosError = error as AxiosError<CommonApiResponse<null>>;
+        console.error('[AuthService] Login error:', axiosError.response?.data || axiosError.message);
         throw {
             success: false,
             error: true,
@@ -79,6 +88,7 @@ export async function logoutUser(): Promise<void> {
         await axiosInstance.get(ApiEndpoints.Logout);
     } catch (error) {
         // Silently fail - we'll clear local storage anyway
+        console.error('[AuthService] Logout error (non-fatal):', error);
     }
 }
 

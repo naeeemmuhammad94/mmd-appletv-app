@@ -82,7 +82,6 @@ export const TVTextInput: React.FC<TVTextInputProps> = ({
                         {
                             color: theme.colors.text,
                             fontSize: theme.fontSize.body,
-                            // height: rs(60), // Handled by container/flex
                         },
                         style,
                     ]}
