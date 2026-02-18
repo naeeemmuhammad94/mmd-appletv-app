@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
+import SearchIcon from '../../../assets/icons/search-icon.svg';
 
 interface HomeHeaderProps {
     onSearchPress?: () => void;
@@ -30,42 +31,43 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     return (
         <View style={styles.container}>
             <View style={styles.contentContainer}>
-                {/* Search Button */}
-                <TouchableOpacity
-                    onPress={onSearchPress}
-                    onFocus={() => setSearchFocused(true)}
-                    onBlur={() => setSearchFocused(false)}
-                    style={[
-                        styles.searchButton,
-                        searchFocused && {
-                            backgroundColor: 'rgba(255,255,255,0.1)',
-                            borderColor: theme.colors.primary,
-                            borderWidth: 2
-                        }
-                    ]}
-                >
-                    <Icon
-                        name="search"
-                        size={rs(32)}
-                        color={searchFocused ? theme.colors.primary : 'white'}
-                    />
-                </TouchableOpacity>
+                {/* Main Navigation Pill */}
+                <View style={styles.pillContainer}>
+                    {/* Search Button */}
+                    <TouchableOpacity
+                        onPress={onSearchPress}
+                        onFocus={() => setSearchFocused(true)}
+                        onBlur={() => setSearchFocused(false)}
+                        style={[
+                            styles.searchButton,
+                            searchFocused && styles.focusedItem
+                        ]}
+                    >
+                        <SearchIcon
+                            width={rs(24)}
+                            height={rs(24)}
+                            color={searchFocused ? theme.colors.background : 'white'}
+                        />
+                    </TouchableOpacity>
 
-                {/* Tabs */}
-                <View style={styles.tabsContainer}>
+                    {/* Divider */}
+                    <View style={styles.divider} />
+
+                    {/* Tabs */}
                     <TouchableOpacity
                         onPress={() => handleTabPress('Curriculum')}
                         onFocus={() => setFocusedTab('Curriculum')}
                         onBlur={() => setFocusedTab(null)}
                         style={[
                             styles.tab,
-                            activeTab === 'Curriculum' && { backgroundColor: theme.colors.primary },
-                            focusedTab === 'Curriculum' && styles.focusedTab
+                            activeTab === 'Curriculum' && styles.activeTab,
+                            focusedTab === 'Curriculum' && styles.focusedItem
                         ]}
                     >
                         <Text style={[
                             styles.tabText,
-                            activeTab === 'Curriculum' ? styles.activeTabText : styles.inactiveTabText
+                            activeTab === 'Curriculum' ? styles.activeTabText : styles.inactiveTabText,
+                            focusedTab === 'Curriculum' && { color: theme.colors.background }
                         ]}>
                             Curriculum
                         </Text>
@@ -77,20 +79,21 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                         onBlur={() => setFocusedTab(null)}
                         style={[
                             styles.tab,
-                            activeTab === 'Announcements' && { backgroundColor: theme.colors.primary },
-                            focusedTab === 'Announcements' && styles.focusedTab
+                            activeTab === 'Announcements' && styles.activeTab,
+                            focusedTab === 'Announcements' && styles.focusedItem
                         ]}
                     >
                         <Text style={[
                             styles.tabText,
-                            activeTab === 'Announcements' ? styles.activeTabText : styles.inactiveTabText
+                            activeTab === 'Announcements' ? styles.activeTabText : styles.inactiveTabText,
+                            focusedTab === 'Announcements' && { color: theme.colors.background }
                         ]}>
                             Announcements
                         </Text>
                     </TouchableOpacity>
                 </View>
 
-                {/* Logout Button */}
+                {/* Logout Button (Right aligned) */}
                 <TouchableOpacity
                     onPress={onLogout}
                     onFocus={() => setFocusedTab('Logout')}
@@ -110,65 +113,75 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 const styles = StyleSheet.create({
     container: {
         width: '100%',
-        paddingTop: rs(30),
+        paddingTop: rs(40),
         paddingHorizontal: rs(60),
-        marginBottom: rs(20),
+        marginBottom: rs(40),
         zIndex: 10,
     },
     contentContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center', // Center content
+        position: 'relative', // For absolute positioning of logout
+        height: rs(80),
+    },
+    pillContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(20, 20, 20, 0.6)', // Dark glass
+        borderRadius: rs(40),
+        padding: rs(6),
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.1)',
+        alignSelf: 'center', // Center the pill itself
+    },
+    divider: {
+        width: 1,
+        height: rs(24),
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        marginHorizontal: rs(10),
     },
     searchButton: {
-        width: rs(60),
-        height: rs(60),
-        borderRadius: rs(30),
+        width: rs(50),
+        height: rs(50),
+        borderRadius: rs(25),
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: rs(40),
-        borderWidth: 2,
-        borderColor: 'transparent',
-    },
-    tabsContainer: {
-        flexDirection: 'row',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: rs(40),
-        padding: rs(4),
     },
     tab: {
-        paddingVertical: rs(10),
-        paddingHorizontal: rs(30),
+        paddingVertical: rs(12),
+        paddingHorizontal: rs(32),
         borderRadius: rs(30),
-        borderWidth: 2,
-        borderColor: 'transparent',
     },
-    focusedTab: {
-        borderColor: 'white',
-        backgroundColor: 'rgba(255,255,255,0.1)',
+    activeTab: {
+        backgroundColor: '#3B82F6', // Explicit color for active state
+    },
+    focusedItem: {
+        backgroundColor: 'white',
     },
     tabText: {
-        fontSize: rs(20),
-        fontWeight: '600',
+        fontSize: rs(22),
+        fontWeight: '500',
     },
     activeTabText: {
         color: 'white',
         fontWeight: 'bold',
     },
     inactiveTabText: {
-        color: 'rgba(255,255,255,0.7)',
+        color: 'rgba(255,255,255,0.6)',
     },
     logoutButton: {
-        marginLeft: 'auto', // Push to right
+        position: 'absolute',
+        right: 0,
         width: rs(60),
         height: rs(60),
         borderRadius: rs(30),
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: 'transparent',
+        backgroundColor: 'rgba(255,255,255,0.1)',
     },
     focusedLogout: {
-        borderColor: 'white',
-        backgroundColor: 'rgba(255,255,255,0.1)',
+        backgroundColor: 'white',
+        transform: [{ scale: 1.1 }],
     },
 });

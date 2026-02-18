@@ -12,6 +12,7 @@ import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 
 // Student Screens
 import StudentHomeScreen from '../screens/student/HomeScreen';
+import SearchScreen from '../screens/student/SearchScreen';
 
 // Dojo Screens
 import DojoHomeScreen from '../screens/dojo/DojoHomeScreen';
@@ -27,6 +28,7 @@ export type AuthStackParamList = {
 
 export type StudentStackParamList = {
     Home: undefined;
+    Search: undefined;
 };
 
 export type DojoStackParamList = {
@@ -70,6 +72,7 @@ const StudentNavigator = () => {
             }}
         >
             <StudentStack.Screen name="Home" component={StudentHomeScreen} />
+            <StudentStack.Screen name="Search" component={SearchScreen} />
         </StudentStack.Navigator>
     );
 };

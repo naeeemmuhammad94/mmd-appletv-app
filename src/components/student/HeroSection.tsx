@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ImageBackground, TouchableOpacity, ImageSourcePropType } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
 import PlayButton from '../../../assets/icons/play_button.svg';
+import BackgroundImage from '../../../assets/images/student-background.png';
 
 interface HeroSectionProps {
     title: string;
@@ -26,85 +26,112 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     // Resolve image source
     const imageSource = typeof image === 'string'
         ? { uri: image }
-        : image
-            ? image
-            : { uri: 'https://images.unsplash.com/photo-1555597673-b21d5c935865?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80' };
+        : image || BackgroundImage;
 
     return (
-        <View style={styles.container}>
-            {/* Info Column */}
-            <View style={styles.infoContainer}>
-                <Text style={styles.headerTitle}>{title}</Text>
-                <Text style={styles.subtitle}>{subtitle}</Text>
-                <Text style={styles.progressText}>{progressText}</Text>
+        <ImageBackground
+            source={imageSource}
+            style={styles.container}
+            imageStyle={styles.backgroundImage}
+            resizeMode="cover"
+        >
+            <View style={styles.contentOverlay}>
+                {/* Info Column - Left Side */}
+                <View style={styles.infoContainer}>
+                    <Text style={styles.headerTitle}>{title}</Text>
+                    <Text style={styles.subtitle}>{subtitle}</Text>
+                    <Text style={styles.progressText}>{progressText}</Text>
 
-                <TouchableOpacity
-                    onPress={onContinuePress}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    style={[
-                        styles.button,
-                        { backgroundColor: theme.colors.primary },
-                        isFocused && styles.buttonFocused
-                    ]}
-                >
-                    <Text style={styles.buttonText}>Continue Training</Text>
-                </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={onContinuePress}
+                        onFocus={() => setIsFocused(true)}
+                        onBlur={() => setIsFocused(false)}
+                        style={[
+                            styles.button,
+                            { backgroundColor: theme.colors.primary },
+                            isFocused && styles.buttonFocused
+                        ]}
+                    >
+                        <Text style={styles.buttonText}>Continue Training</Text>
+                    </TouchableOpacity>
 
-                <Text style={styles.restartLink}>Restart Learning</Text>
-            </View>
+                    <Text style={styles.restartLink}>Restart Learning</Text>
+                </View>
 
-            {/* Image Column */}
-            <View style={styles.imageContainer}>
-                <View style={styles.overlay}>
-                    <PlayButton width={rs(80)} height={rs(80)} />
+                {/* Play Button - Absolute Centered */}
+                <View style={styles.playButtonContainer}>
+                    <PlayButton width={rs(120)} height={rs(120)} />
                 </View>
             </View>
-        </View>
+
+            {/* Gradient Overlay for text readability */}
+            <View style={styles.gradientOverlay} />
+        </ImageBackground>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
-        flexDirection: 'row',
-        paddingHorizontal: rs(60),
-        height: rs(400),
+        width: '100%',
+        height: rs(500), // Increased height for better look
         marginBottom: rs(40),
+        justifyContent: 'center',
+        paddingHorizontal: 0, // Reset padding
+    },
+    backgroundImage: {
+        // No border radius needed for full bleed? Or maybe just simple cover
+    },
+    contentOverlay: {
+        flex: 1,
+        flexDirection: 'row',
         alignItems: 'center',
+        paddingHorizontal: rs(60), // Add padding here
+        zIndex: 2,
+        position: 'relative',
+    },
+    gradientOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.4)', // Darken background for text
+        zIndex: 1,
     },
     infoContainer: {
         flex: 1,
         justifyContent: 'center',
         paddingRight: rs(40),
+        zIndex: 3,
     },
-    imageContainer: {
-        flex: 1.5,
-        height: '100%',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
+    playButtonContainer: {
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
+        transform: [{ translateX: -rs(60) }, { translateY: -rs(60) }], // Center based on size
+        zIndex: 3,
+        // Shadow for play button
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.5,
         shadowRadius: 10,
     },
     headerTitle: {
-        fontSize: rs(48),
+        fontSize: rs(56), // Larger title
         fontWeight: 'bold',
         color: 'white',
-        marginBottom: rs(8),
+        marginBottom: rs(12),
     },
     subtitle: {
-        fontSize: rs(24),
-        color: 'rgba(255,255,255,0.9)',
-        marginBottom: rs(8),
+        fontSize: rs(28),
+        color: 'rgba(255,255,255,0.95)',
+        marginBottom: rs(12),
     },
     progressText: {
-        fontSize: rs(20),
-        color: 'rgba(255,255,255,0.6)',
+        fontSize: rs(22),
+        color: 'rgba(255,255,255,0.7)',
         marginBottom: rs(30),
     },
     button: {
-        paddingVertical: rs(16),
-        paddingHorizontal: rs(32),
-        borderRadius: rs(8),
+        paddingVertical: rs(18),
+        paddingHorizontal: rs(40),
+        borderRadius: rs(12),
         alignSelf: 'flex-start',
         marginBottom: rs(20),
         borderWidth: 4,
@@ -116,31 +143,11 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         color: 'white',
-        fontSize: rs(24),
+        fontSize: rs(26),
         fontWeight: 'bold',
     },
     restartLink: {
-        color: 'rgba(255,255,255,0.5)',
-        fontSize: rs(18),
-    },
-    image: {
-        flex: 1,
-        width: '100%',
-    },
-    overlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.2)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    playButton: {
-        width: rs(80),
-        height: rs(80),
-        borderRadius: rs(40),
-        backgroundColor: 'rgba(255,255,255,0.9)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#3B82F6',
+        color: 'rgba(255,255,255,0.6)',
+        fontSize: rs(20),
     },
 });

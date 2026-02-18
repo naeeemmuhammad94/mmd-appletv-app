@@ -19,7 +19,14 @@ const BackgroundImage = require('../../../assets/images/student-background.png')
 
 import { PROGRAMS_DATA, TRAINING_AREA_DATA, RECENTLY_WATCHED_DATA } from '../../data/dummyHomeData';
 
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { StudentStackParamList } from '../../navigation';
+
+type HomeScreenNavigationProp = NativeStackNavigationProp<StudentStackParamList, 'Home'>;
+
 const HomeScreen: React.FC = () => {
+    const navigation = useNavigation<HomeScreenNavigationProp>();
     const { logout } = useAuthStore();
     const { theme } = useTheme();
 
@@ -44,7 +51,7 @@ const HomeScreen: React.FC = () => {
             <ImageBackground source={BackgroundImage} style={styles.headerBackground}>
                 <View style={styles.headerOverlay}>
                     <HomeHeader
-                        onSearchPress={() => console.log('Search pressed')}
+                        onSearchPress={() => navigation.navigate('Search')}
                         onTabChange={(tab) => console.log('Tab changed:', tab)}
                         onLogout={logout}
                     />
