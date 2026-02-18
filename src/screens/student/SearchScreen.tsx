@@ -34,9 +34,25 @@ const SearchScreen = () => {
             </View>
 
             <View style={styles.content}>
-                <Text style={{ color: theme.colors.text, fontSize: rs(20) }}>
-                    {searchQuery ? `Searching for "${searchQuery}"...` : 'Start typing to search'}
-                </Text>
+                {!searchQuery ? (
+                    <View style={{ width: '100%' }}>
+                        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Recent Searches</Text>
+                        <FlatList
+                            data={['Karate Basics', 'Sparring Techniques', 'Summer Camp']}
+                            keyExtractor={(item) => item}
+                            renderItem={({ item }) => (
+                                <TouchableOpacity style={styles.resultItem}>
+                                    <Icon name="history" size={rs(24)} color={theme.colors.textSecondary} />
+                                    <Text style={[styles.resultText, { color: theme.colors.text }]}>{item}</Text>
+                                </TouchableOpacity>
+                            )}
+                        />
+                    </View>
+                ) : (
+                    <Text style={{ color: theme.colors.text, fontSize: rs(20) }}>
+                        {`Searching for "${searchQuery}"...`}
+                    </Text>
+                )}
             </View>
         </View>
     );
@@ -72,8 +88,23 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        justifyContent: 'center',
+        paddingHorizontal: rs(20),
+    },
+    sectionTitle: {
+        fontSize: rs(28),
+        fontWeight: 'bold',
+        marginBottom: rs(20),
+    },
+    resultItem: {
+        flexDirection: 'row',
         alignItems: 'center',
+        paddingVertical: rs(16),
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(255,255,255,0.1)',
+    },
+    resultText: {
+        fontSize: rs(24),
+        marginLeft: rs(20),
     },
 });
 

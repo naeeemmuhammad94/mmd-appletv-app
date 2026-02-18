@@ -13,6 +13,7 @@ interface FocusableCardProps extends PressableProps {
     style?: StyleProp<ViewStyle>;
     focusedStyle?: StyleProp<ViewStyle>;
     containerStyle?: StyleProp<ViewStyle>;
+    wrapperStyle?: StyleProp<ViewStyle>;
     children: React.ReactNode | ((state: { focused: boolean; pressed: boolean }) => React.ReactNode);
     scaleOnFocus?: boolean;
 }
@@ -20,6 +21,7 @@ interface FocusableCardProps extends PressableProps {
 export const FocusableCard: React.FC<FocusableCardProps> = ({
     style,
     focusedStyle,
+    wrapperStyle,
     children,
     scaleOnFocus = true,
     onFocus,
@@ -65,7 +67,7 @@ export const FocusableCard: React.FC<FocusableCardProps> = ({
             {...props}
         >
             {({ pressed, focused }) => (
-                <Animated.View style={[{ flex: 1, transform: [{ scale }] }]}>
+                <Animated.View style={[{ flex: 1, transform: [{ scale }] }, wrapperStyle]}>
                     {typeof children === 'function'
                         ? children({ focused, pressed })
                         : children}

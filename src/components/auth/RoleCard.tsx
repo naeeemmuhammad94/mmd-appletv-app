@@ -108,26 +108,21 @@ const styles = StyleSheet.create({
     },
     content: {
         alignItems: 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between', // Push content apart
         flex: 1,
         width: '100%',
+        paddingBottom: rs(40), // match previous bottom offset
     },
     iconContainer: {
-        marginBottom: rs(20), // Spacing between icon and text
+        marginBottom: rs(20),
         justifyContent: 'center',
         alignItems: 'center',
+        flex: 1, // Allow icon to take up remaining space centrally
     },
     title: {
-        fontFamily: 'SF Compact', // From design: font-['SF_Compact']
-        fontWeight: '400', // Default
+        fontFamily: 'SF Compact',
+        fontWeight: '400',
         textAlign: 'center',
-        position: 'absolute', // Design has text positioned absolutely at bottom?
-        // "top-[371px]" etc.
-        // For scalable component, flex column is better.
-        // But to match design exactly:
-        // Card height 476. Text top ~375.
-        // 375/476 is lower part.
-        // I will use marginBottom or just standard flow.
-        bottom: rs(40),
+        // Removed absolute positioning
     },
 });

@@ -6,7 +6,7 @@ export const AUTH_SCREEN_THEME = {
         containerWidth: rs(1680), // w-[1680px]
         headerWidth: rs(592),     // w-[592px]
         cardContentWidth: rs(1459), // w-[1459px]
-        cardHeight: rs(600),      // h-[600px] (Login default)
+        cardHeight: rs(680),      // h-[680px] (Increased for Login content)
         cardHeightForgotPassword: rs(517), // h-[517px] (Forgot Password default)
         borderRadius: rs(40),     // rounded-[40px]
         inputHeight: rs(96),      // h-24 -> 96px

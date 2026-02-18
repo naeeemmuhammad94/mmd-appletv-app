@@ -71,7 +71,7 @@ export const TVTextInput: React.FC<TVTextInputProps> = ({
                                 ? theme.colors.focusBorder
                                 : theme.colors.inputBorder,
                         borderRadius: theme.borderRadius.md,
-                        borderWidth: isFocused ? 2 : 1,
+                        borderWidth: 2, // Standardize to prevent layout shift
                     },
                     containerStyle, // Apply here
                 ]}

@@ -10,10 +10,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, LoginFormData } from '../../validations/loginSchema';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Logo from '../../../assets/icons/logo.svg';
-
 import { AUTH_SCREEN_THEME as SCREEN_THEME } from '../../theme/authTheme';
+import { AuthLayout } from '../../components/auth/AuthLayout';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -46,162 +44,101 @@ export default function LoginScreen({ navigation }: Props) {
     };
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            <View style={styles.bgGradient} />
-
-            <View style={styles.content}>
-                {/* ── Header ── */}
-                <View style={[styles.header, { width: SCREEN_THEME.layout.headerWidth }]}>
-                    <View style={styles.headerIconContainer}>
-                        <Logo
-                            width={SCREEN_THEME.typography.logoSize}
-                            height={SCREEN_THEME.typography.logoSize}
-                            fill={theme.colors.text}
-                        />
+        <AuthLayout
+            subtitle="Login to your Manage My Dojo account for access."
+            cardStyle={{ height: SCREEN_THEME.layout.cardHeight }}
+        >
+            <View style={styles.cardContent}>
+                {/* Error Message */}
+                {(apiError || localError) && (
+                    <View style={styles.errorContainer}>
+                        <Text style={styles.errorText}>
+                            {apiError || localError}
+                        </Text>
                     </View>
-                    <Text style={[styles.headerSubtitle, { color: SCREEN_THEME.colors.headerText }]}>
-                        Login to your Manage My Dojo account for access.
-                    </Text>
+                )}
+                {/* Username Field */}
+                <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.colors.text }]}>Username</Text>
+                    <Controller
+                        control={control}
+                        name="userName"
+                        render={({ field: { onChange, value } }) => (
+                            <TVTextInput
+                                value={value}
+                                onChangeText={onChange}
+                                placeholder=""
+                                autoCapitalize="none"
+                                style={styles.input}
+                                containerStyle={styles.inputContainer}
+                            />
+                        )}
+                    />
                 </View>
 
-                {/* ── Main Card ── */}
-                <View style={[styles.loginCard, { borderColor: SCREEN_THEME.colors.borderColor }]}>
-                    <View style={styles.cardContent}>
-                        {/* Error Message */}
-                        {(apiError || localError) && (
-                            <View style={styles.errorContainer}>
-                                <Text style={styles.errorText}>
-                                    {apiError || localError}
-                                </Text>
-                            </View>
-                        )}
-                        {/* Username Field */}
-                        <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: theme.colors.text }]}>Username</Text>
-                            <Controller
-                                control={control}
-                                name="userName"
-                                render={({ field: { onChange, value } }) => (
-                                    <TVTextInput
-                                        value={value}
-                                        onChangeText={onChange}
-                                        placeholder=""
-                                        autoCapitalize="none"
-                                        style={styles.input}
-                                        containerStyle={styles.inputContainer}
-                                    />
-                                )}
-                            />
-                        </View>
-
-                        {/* Password Field */}
-                        <View style={styles.inputGroup}>
-                            <Text style={[styles.label, { color: theme.colors.text }]}>Password</Text>
-                            <View style={styles.passwordContainer}>
-                                <Controller
-                                    control={control}
-                                    name="password"
-                                    render={({ field: { onChange, value } }) => (
-                                        <TVTextInput
-                                            value={value}
-                                            onChangeText={onChange}
-                                            secureTextEntry={!showPassword}
-                                            placeholder=""
-                                            style={styles.input}
-                                            containerStyle={styles.inputContainer}
-                                            showVisibilityIcon={false}
-                                        />
-                                    )}
+                {/* Password Field */}
+                <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { color: theme.colors.text }]}>Password</Text>
+                    <View style={styles.passwordContainer}>
+                        <Controller
+                            control={control}
+                            name="password"
+                            render={({ field: { onChange, value } }) => (
+                                <TVTextInput
+                                    value={value}
+                                    onChangeText={onChange}
+                                    secureTextEntry={!showPassword}
+                                    placeholder=""
+                                    style={styles.input}
+                                    containerStyle={styles.inputContainer}
+                                    showVisibilityIcon={false}
                                 />
-                                <TouchableOpacity
-                                    onPress={() => setShowPassword(!showPassword)}
-                                    style={styles.showButton}
-                                >
-                                    <Text style={styles.showButtonText}>
-                                        {showPassword ? 'Hide' : 'Show'}
-                                    </Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-
-                        {/* Bottom Row Actions */}
-                        <View style={styles.bottomRow}>
-                            <TouchableOpacity
-                                onPress={() => navigation.navigate('ForgotPassword')}
-                                style={styles.forgotPasswordButton}
-                            >
-                                <Text style={styles.forgotPasswordText}>
-                                    Forgot Password
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TVButton
-                                title="Sign In"
-                                onPress={handleSubmit(onSubmit)}
-                                isLoading={isLoading}
-                                style={styles.signInButton}
-                                textStyle={styles.signInButtonText}
-                            />
-                        </View>
+                            )}
+                        />
+                        <TouchableOpacity
+                            onPress={() => setShowPassword(!showPassword)}
+                            style={styles.showButton}
+                        >
+                            <Text style={styles.showButtonText}>
+                                {showPassword ? 'Hide' : 'Show'}
+                            </Text>
+                        </TouchableOpacity>
                     </View>
+                </View>
 
+                {/* Bottom Row Actions */}
+                <View style={styles.bottomRow}>
+                    <TouchableOpacity
+                        onPress={() => navigation.navigate('ForgotPassword')}
+                        style={styles.forgotPasswordButton}
+                    >
+                        <Text style={styles.forgotPasswordText}>
+                            Forgot Password
+                        </Text>
+                    </TouchableOpacity>
+
+                    <TVButton
+                        title="Sign In"
+                        onPress={handleSubmit(onSubmit)}
+                        isLoading={isLoading}
+                        style={styles.signInButton}
+                        textStyle={styles.signInButtonText}
+                    />
                 </View>
             </View>
-        </SafeAreaView>
+        </AuthLayout>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
+    // container, bgGradient, content, header* removed as they are in AuthLayout
+    cardContent: {
+        // Remove absolute positioning to let flex center it
+        width: SCREEN_THEME.layout.cardContentWidth,
+        gap: SCREEN_THEME.spacing.cardInnerGap,
     },
-    bgGradient: {
-        ...StyleSheet.absoluteFillObject,
-        // Add gradient background logic if available, else standard bg
-    },
-    content: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: SCREEN_THEME.spacing.mainGap,
-        width: '100%',
-    },
-    header: {
-        alignItems: 'center',
-        gap: SCREEN_THEME.spacing.headerGap,
-    },
-    headerIconContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: SCREEN_THEME.spacing.headerIconGap,
-    },
-    headerSubtitle: {
-        fontFamily: 'SF Pro Display',
-        fontWeight: '500',
-        fontSize: SCREEN_THEME.typography.headerSubtitleSize,
-        textAlign: 'center',
-    },
-    loginCard: {
-        width: '100%', // Parent constraint
-        maxWidth: SCREEN_THEME.layout.containerWidth,
-        height: SCREEN_THEME.layout.cardHeight,
-        backgroundColor: SCREEN_THEME.colors.cardBg,
-        borderRadius: SCREEN_THEME.layout.borderRadius,
-        // Borders: l-2, r, t-2, b
-        borderLeftWidth: 2,
-        borderRightWidth: 1,
-        borderTopWidth: 2,
-        borderBottomWidth: 1,
-        // Shadows
-        shadowColor: '#000',
-        shadowOffset: { width: 20, height: 18 },
-        shadowOpacity: 0.37,
-        shadowRadius: 37,
-        elevation: 10, // Android fallback
-        overflow: 'hidden',
-        alignItems: 'center', // Center content horizontally
-        justifyContent: 'center', // Center content vertically
-    },
+    // ... keep inputGroup and below
+
     cardContent: {
         // Remove absolute positioning to let flex center it
         width: SCREEN_THEME.layout.cardContentWidth,
@@ -237,7 +174,7 @@ const styles = StyleSheet.create({
     },
     showButton: {
         position: 'absolute',
-        right: 40,
+        right: rs(40),
         paddingHorizontal: rs(40),
         paddingVertical: rs(10),
         borderRadius: rs(20),

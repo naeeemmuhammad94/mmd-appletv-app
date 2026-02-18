@@ -41,6 +41,7 @@ export const TVButton: React.FC<TVButtonProps> = ({
                 borderWidth: 3,
                 transform: [{ scale: 1.05 }],
             }}
+            wrapperStyle={{ flex: 0, width: '100%', alignItems: 'center', justifyContent: 'center' }}
             scaleOnFocus={true}
         >
             {({ focused }) => (

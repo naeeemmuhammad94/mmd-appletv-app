@@ -19,6 +19,10 @@ import { AUTH_SCREEN_THEME as SCREEN_THEME } from '../../theme/authTheme';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'ForgotPassword'>;
 
+import { AuthLayout } from '../../components/auth/AuthLayout';
+
+// ...
+
 export default function ForgotPasswordScreen({ navigation }: Props) {
     const { theme } = useTheme();
     const [isSuccess, setIsSuccess] = useState(false);
@@ -115,7 +119,17 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                 />
             </View>
 
-            <View style={styles.sendButtonContainer}>
+            {/* Bottom Row Actions - Matching LoginScreen */}
+            <View style={styles.bottomRow}>
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={styles.backButton}
+                >
+                    <Text style={styles.backText}>
+                        Back to Sign In
+                    </Text>
+                </TouchableOpacity>
+
                 <TVButton
                     title="Send Reset Link"
                     onPress={handleSubmit(onSubmit)}
@@ -124,112 +138,31 @@ export default function ForgotPasswordScreen({ navigation }: Props) {
                     textStyle={styles.sendButtonText}
                 />
             </View>
-
-            <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}
-            >
-                <Text style={styles.backText}>
-                    Back to Sign In
-                </Text>
-            </TouchableOpacity>
         </View>
     );
 
     return (
-        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            <View style={styles.bgGradient} />
-
-            <View style={styles.content}>
-                {!isSuccess && (
-                    <View style={styles.header}>
-                        <View style={styles.headerIconContainer}>
-                            <Logo
-                                width={SCREEN_THEME.typography.logoSize}
-                                height={SCREEN_THEME.typography.logoSize}
-                                fill={theme.colors.text}
-                            />
-                        </View>
-                        <Text style={[styles.headerSubtitle, { color: SCREEN_THEME.colors.headerText }]}>
-                            If you don't know your username contact your school for help.
-                        </Text>
-                    </View>
-                )}
-
-                <View style={[
-                    styles.card,
-                    {
-                        borderColor: SCREEN_THEME.colors.borderColor,
-                        // Adjust height dynamically if success state is different,
-                        // but design implies fixed size for form. Success state might reuse or differ.
-                        // I will stick to fixed height for form.
-                        height: isSuccess ? undefined : SCREEN_THEME.layout.cardHeightForgotPassword,
-                    }
-                ]}>
-                    {isSuccess ? renderSuccessState() : renderRequestState()}
-                </View>
-            </View>
-        </SafeAreaView>
+        <AuthLayout
+            subtitle={!isSuccess ? "If you don't know your username contact your school for help." : undefined}
+            showHeader={!isSuccess}
+            cardStyle={{
+                height: isSuccess ? undefined : SCREEN_THEME.layout.cardHeightForgotPassword,
+            }}
+        >
+            {isSuccess ? renderSuccessState() : renderRequestState()}
+        </AuthLayout>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    bgGradient: {
-        ...StyleSheet.absoluteFillObject,
-    },
-    content: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: SCREEN_THEME.spacing.mainGap,
-        width: '100%',
-    },
-    header: {
-        alignItems: 'center',
-        width: SCREEN_THEME.layout.headerWidth,
-        gap: SCREEN_THEME.spacing.headerGap,
-    },
-    headerIconContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: SCREEN_THEME.spacing.headerIconGap,
-    },
-    headerSubtitle: {
-        fontFamily: 'SF Pro Display',
-        fontWeight: '500',
-        fontSize: SCREEN_THEME.typography.headerSubtitleSize,
-        textAlign: 'center',
-    },
-    card: {
-        width: '100%',
-        maxWidth: SCREEN_THEME.layout.containerWidth,
-        backgroundColor: SCREEN_THEME.colors.cardBg,
-        borderRadius: SCREEN_THEME.layout.borderRadius,
-        // Borders
-        borderLeftWidth: 2,
-        borderRightWidth: 1,
-        borderTopWidth: 2,
-        borderBottomWidth: 1,
-        // Shadows
-        shadowColor: '#000',
-        shadowOffset: { width: 20, height: 18 },
-        shadowOpacity: 0.37,
-        shadowRadius: 37,
-        elevation: 10,
-        overflow: 'hidden',
-        alignItems: 'center', // Success state centering
-        justifyContent: 'center',
-    },
+    // container, bgGradient, content, header* removed
     cardContent: {
-        position: 'absolute',
-        top: 69, // top-[69px]
-        left: 110, // left-[110px]
+        // Remove absolute positioning to match LoginScreen
         width: SCREEN_THEME.layout.cardContentWidth,
         gap: SCREEN_THEME.spacing.cardInnerGapLarge,
     },
+    // ... keep inputGroup and below
+
     inputGroup: {
         gap: rs(28), // Same as Login gap-7
         width: '100%',
@@ -241,17 +174,17 @@ const styles = StyleSheet.create({
     },
     input: {
         height: SCREEN_THEME.layout.inputHeight,
-        backgroundColor: SCREEN_THEME.colors.inputBg,
-        borderRadius: SCREEN_THEME.layout.inputRadius,
-        borderWidth: 1,
-        borderColor: SCREEN_THEME.colors.borderColor,
         fontSize: SCREEN_THEME.typography.labelSize,
         paddingHorizontal: rs(20),
-        color: '#FFFFFF',
+        color: '#FFFFFF', // Assuming white text for dark bg
     },
-    sendButtonContainer: {
-        // "px-10 py-5 bg-gradient... inline-flex"
-        alignItems: 'flex-start',
+    bottomRow: {
+        flexDirection: 'row',
+        justifyContent: 'center', // Center the Sign In button
+        alignItems: 'center',
+        marginTop: rs(72), // Match LoginScreen spacing
+        width: '100%',
+        position: 'relative', // For absolute positioning context
     },
     sendButton: {
         paddingHorizontal: rs(40),
@@ -260,6 +193,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#BFDBFE', // blue-200
         backgroundColor: SCREEN_THEME.colors.blueButtonStart,
+        width: undefined,
     },
     sendButtonText: {
         fontFamily: 'SF Pro Display',
@@ -269,20 +203,10 @@ const styles = StyleSheet.create({
     },
     backButton: {
         position: 'absolute',
-        left: 127, // left-[127px] -> Relative to CARD? 
-        // Design says "left-[127px] top-[370px] absolute"
-        // This acts as absolute to the card container (since it's inside `relative` in web).
-        // My `cardContent` wrapper is absolute.
-        // `backButton` being absolute inside `cardContent` might be tricky if `cardContent` has fixed size.
-        // Actually, in web `top-[370px]` is relative to Card. 
-        // My `cardContent` is at top 69.
-        // So 370 - 69 = 301 from top of `cardContent`.
-        // Or just use absolute on Card level if possible, but structure prevents easy sibling overlap.
-        // I'll put it outside `cardContent` or use absolute positioning similar to `cardContent`.
-        top: SCREEN_THEME.spacing.backButtonTop,
-        width: rs(384), // w-96
+        left: 0,
+        paddingVertical: rs(20),
         justifyContent: 'center',
-        alignItems: 'center',
+        alignItems: 'flex-start',
     },
     backText: {
         fontFamily: 'SF Pro Display',
@@ -297,6 +221,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: rs(60),
         gap: rs(30),
+
     },
     icon: {
         marginBottom: rs(20),
