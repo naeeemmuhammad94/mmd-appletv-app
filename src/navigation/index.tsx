@@ -13,6 +13,8 @@ import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 // Student Screens
 import StudentHomeScreen from '../screens/student/HomeScreen';
 import SearchScreen from '../screens/student/SearchScreen';
+import ProgramDetailScreen from '../screens/student/ProgramDetailScreen';
+import VimeoPlayerScreen from '../screens/student/VimeoPlayerScreen';
 
 // Dojo Screens
 import DojoHomeScreen from '../screens/dojo/DojoHomeScreen';
@@ -29,6 +31,8 @@ export type AuthStackParamList = {
 export type StudentStackParamList = {
     Home: undefined;
     Search: undefined;
+    ProgramDetail: { programId: string };
+    VideoPlayer: { videoUrl: string; title?: string };
 };
 
 export type DojoStackParamList = {
@@ -73,6 +77,8 @@ const StudentNavigator = () => {
         >
             <StudentStack.Screen name="Home" component={StudentHomeScreen} />
             <StudentStack.Screen name="Search" component={SearchScreen} />
+            <StudentStack.Screen name="ProgramDetail" component={ProgramDetailScreen} />
+            <StudentStack.Screen name="VideoPlayer" component={VimeoPlayerScreen} />
         </StudentStack.Navigator>
     );
 };

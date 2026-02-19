@@ -28,6 +28,7 @@
     "react-native-screens": "^4.23.0",
     "react-native-svg": "^15.15.3",
     "react-native-vector-icons": "^10.3.0",
+    "react-native-webview": "^13.16.0",
     "zod": "^4.3.6",
     "zustand": "^5.0.11"
   },

@@ -11,6 +11,7 @@ interface HeroSectionProps {
     progressText: string;
     image?: ImageSourcePropType | string;
     onContinuePress: () => void;
+    withBackground?: boolean;
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
@@ -18,7 +19,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     subtitle,
     progressText,
     image,
-    onContinuePress
+    onContinuePress,
+    withBackground = true
 }) => {
     const { theme } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
@@ -28,13 +30,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         ? { uri: image }
         : image || BackgroundImage;
 
+    const Container = withBackground ? ImageBackground : View;
+    const containerProps = withBackground ? {
+        source: imageSource,
+        style: styles.container,
+        imageStyle: styles.backgroundImage,
+        resizeMode: "cover" as const
+    } : {
+        style: styles.container
+    };
+
     return (
-        <ImageBackground
-            source={imageSource}
-            style={styles.container}
-            imageStyle={styles.backgroundImage}
-            resizeMode="cover"
-        >
+        <Container {...containerProps}>
             <View style={styles.contentOverlay}>
                 {/* Info Column - Left Side */}
                 <View style={styles.infoContainer}>
@@ -66,7 +73,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
             {/* Gradient Overlay for text readability */}
             <View style={styles.gradientOverlay} />
-        </ImageBackground>
+        </Container>
     );
 };
 

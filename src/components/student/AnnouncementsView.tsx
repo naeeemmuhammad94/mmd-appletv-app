@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
+import BackIcon from '../../../assets/icons/back-icon.svg';
 
 interface Announcement {
     id: string;
@@ -43,9 +44,20 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ ListHeader
 
         return (
             <View style={styles.detailContainer}>
-                {ListHeaderComponent}
+                {/* ListHeaderComponent removed as per request */}
 
-                <Text style={styles.header}>Announcements</Text>
+                <View style={styles.detailHeaderContainer}>
+                    <TouchableOpacity
+                        onPress={handleBackPress}
+                        style={styles.backButtonIcon}
+                        hasTVPreferredFocus={true}
+                    >
+                        <BackIcon width={rs(30)} height={rs(30)} fill="white" />
+                    </TouchableOpacity>
+                    <Text style={styles.detailHeaderTitle}>Announcements</Text>
+                    {/* Placeholder to balance the header */}
+                    <View style={{ width: rs(50) }} />
+                </View>
 
                 <View style={styles.detailContent}>
                     {/* Title Section */}
@@ -66,30 +78,40 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ ListHeader
                         <Text style={styles.valueText}>{selectedAnnouncement.date}</Text>
                     </View>
                 </View>
-
-                {/* Back Hint or Button could go here, but remote 'Menu' usually handles it or just navigating away */}
-                {/* Adding a visual close/back button is good UX for TV if standard back isn't wired */}
-                <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-                    <Text style={styles.backButtonText}>Back</Text>
-                </TouchableOpacity>
             </View>
         );
     };
 
-    const renderItem = ({ item }: { item: Announcement }) => {
+    const AnnouncementItem = ({ item, theme, onSelect }: { item: Announcement, theme: any, onSelect: (item: Announcement) => void }) => {
+        const [isFocused, setIsFocused] = React.useState(false);
+
         return (
             <TouchableOpacity
-                style={styles.card}
-                onPress={() => setSelectedAnnouncement(item)}
+                style={[
+                    styles.card,
+                    isFocused && styles.cardFocused,
+                    { borderColor: isFocused ? theme?.colors?.primary || '#3b82f6' : 'rgba(59, 130, 246, 0.3)' }
+                ]}
+                onPress={() => onSelect(item)}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                activeOpacity={0.8}
             >
                 <View style={styles.cardHeader}>
-                    <Text style={styles.title}>{item.title}</Text>
-                    <Text style={styles.date}>{item.date}</Text>
+                    <Text style={[styles.title, isFocused && styles.textFocused]}>{item.title}</Text>
+                    <Text style={[styles.date, isFocused && styles.textFocused]}>{item.date}</Text>
                 </View>
-                <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
+                <Text style={[styles.description, isFocused && styles.textFocused]} numberOfLines={2}>{item.description}</Text>
             </TouchableOpacity>
         );
     };
+
+    // ... existing code ...
+
+    const renderItem = ({ item }: { item: Announcement }) => {
+        return <AnnouncementItem item={item} theme={theme} onSelect={setSelectedAnnouncement} />;
+    };
+
 
     if (selectedAnnouncement) {
         return renderDetailView();
@@ -131,6 +153,25 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         textAlign: 'center',
         marginTop: rs(20),
+    },
+    detailHeaderContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: rs(60),
+        marginTop: rs(20),
+        marginBottom: rs(40),
+    },
+    detailHeaderTitle: {
+        color: 'white',
+        fontSize: rs(32),
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    backButtonIcon: {
+        padding: rs(10),
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     listContent: {
         paddingBottom: rs(40),
@@ -186,17 +227,12 @@ const styles = StyleSheet.create({
         color: 'rgba(255,255,255,0.8)',
         fontSize: rs(22),
     },
-    backButton: {
-        backgroundColor: 'rgba(255,255,255,0.1)',
-        alignSelf: 'flex-start',
-        marginLeft: rs(60),
-        paddingVertical: rs(10),
-        paddingHorizontal: rs(30),
-        borderRadius: rs(8),
-        marginTop: rs(20),
+    cardFocused: {
+        transform: [{ scale: 1.02 }],
+        backgroundColor: 'rgba(255, 255, 255, 0.1)', // Slightly lighter
+        borderColor: 'white',
     },
-    backButtonText: {
+    textFocused: {
         color: 'white',
-        fontSize: rs(20),
     },
 });

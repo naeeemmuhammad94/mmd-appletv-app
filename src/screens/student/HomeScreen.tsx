@@ -60,7 +60,7 @@ const HomeScreen: React.FC = () => {
     };
 
     const handleProgramPress = (item: any) => {
-        console.log('Program pressed:', item.title);
+        navigation.navigate('ProgramDetail', { programId: item.id });
     };
 
     const handleTrainingAreaPress = (item: any) => {
@@ -113,16 +113,24 @@ const HomeScreen: React.FC = () => {
                     contentContainerStyle={styles.scrollContent}
                     showsVerticalScrollIndicator={false}
                 >
-                    {renderHeader()}
+                    <ImageBackground
+                        source={BackgroundImage}
+                        style={styles.headerBackground}
+                        resizeMode="cover"
+                    >
+                        <View style={styles.backgroundOverlay} />
+                        {renderHeader()}
 
-                    <View style={styles.heroContainer}>
-                        <HeroSection
-                            title="Today's Training"
-                            subtitle="Fundamental Balance & Control"
-                            progressText="Videos 2 of 6"
-                            onContinuePress={() => console.log('Continue Training pressed')}
-                        />
-                    </View>
+                        <View style={styles.heroContainer}>
+                            <HeroSection
+                                title="Today's Training"
+                                subtitle="Fundamental Balance & Control"
+                                progressText="Videos 2 of 6"
+                                onContinuePress={() => console.log('Continue Training pressed')}
+                                withBackground={false}
+                            />
+                        </View>
+                    </ImageBackground>
 
                     <View style={styles.contentSection}>
                         <HorizontalRow
@@ -195,6 +203,11 @@ const styles = StyleSheet.create({
     },
     contentSection: {
         paddingTop: rs(20),
+    },
+    headerBackground: {
+        width: '100%',
+        // Remove fixed height, let content define it? 
+        // Or set minHeight to ensure it covers enough
     },
 });
 
