@@ -41,6 +41,30 @@ export async function getStudyContentForContact(
 }
 
 /**
+ * Get study content (admin-accessible endpoint)
+ * Dojo-app equivalent: GET /study-content/?withoutPagination=true
+ */
+export async function getStudyContent(
+    params?: StudySearchParams
+): Promise<CommonApiResponse<StudyContentListing>> {
+    try {
+        const response = await axiosInstance.get<CommonApiResponse<StudyContentListing>>(
+            ApiEndpoints.StudyContent,
+            { params }
+        );
+        return response.data;
+    } catch (error) {
+        const axiosError = error as AxiosError<CommonApiResponse<null>>;
+        throw {
+            success: false,
+            error: true,
+            message: axiosError.response?.data?.message || 'Failed to fetch study content.',
+            data: null,
+        };
+    }
+}
+
+/**
  * Get single study content by ID
  * CRM equivalent: getStudyContentById() → GET /study-content/{id}
  */
@@ -112,6 +136,7 @@ export async function getSubCategoriesByCategoryId(
 
 export const studyService = {
     getStudyContentForContact,
+    getStudyContent,
     getStudyContentById,
     getStudyCategories,
     getSubCategoriesByCategoryId,

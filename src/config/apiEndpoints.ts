@@ -21,6 +21,7 @@ export enum ApiEndpoints {
     StudyCategory = '/study-category',
     StudyCategoryById = '/study-category/',
     SubCategoryByCategoryId = '/study-category/sub-category-by-category-id/',
+    GetAllSubCategories = '/study-category/get-all-sub-category',
 
     // Notice Board (Announcements)
     NoticeBoardForContact = '/notice-board/getNoticeBoardForContact',

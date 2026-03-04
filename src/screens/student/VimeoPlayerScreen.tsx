@@ -64,10 +64,32 @@ const VimeoPlayerScreen: React.FC = () => {
         try {
             setIsLoading(true);
             setError(null);
+
+            // Check if it's already a direct HLS or MP4 link
+            if (url.includes('.m3u8') || url.includes('.mp4')) {
+                setDebugInfo('Direct stream found, launching native player...');
+                const playerModule = NativeModules.VimeoPlayerModule;
+                if (playerModule && typeof playerModule.playHLS === 'function') {
+                    playerModule.playHLS(url, title || '');
+                    setTimeout(() => setIsLoading(false), 2000);
+                } else {
+                    setError('Video player module not available');
+                    setIsLoading(false);
+                }
+                return;
+            }
+
             setDebugInfo('Fetching video page...');
 
+            // If it's a standard vimeo.com/12345 link, convert it to an embed URL to scrape the config
+            let fetchUrl = url;
+            const vimeoIdMatch = url.match(/(?:vimeo\.com\/|video\/)(\d+)/);
+            if (vimeoIdMatch && vimeoIdMatch[1]) {
+                fetchUrl = `https://player.vimeo.com/video/${vimeoIdMatch[1]}`;
+            }
+
             // Step 1: Fetch the Vimeo embed HTML
-            const response = await fetch(url);
+            const response = await fetch(fetchUrl);
             const html = await response.text();
             setDebugInfo('Parsing video config...');
 

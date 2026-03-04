@@ -23,6 +23,7 @@ interface TVTextInputProps extends TextInputProps {
     onChangeText: (text: string) => void;
     containerStyle?: StyleProp<ViewStyle>;
     showVisibilityIcon?: boolean;
+    rightAccessory?: React.ReactNode;
 }
 
 export const TVTextInput: React.FC<TVTextInputProps> = ({
@@ -34,6 +35,7 @@ export const TVTextInput: React.FC<TVTextInputProps> = ({
     onChangeText,
     containerStyle, // Destructure
     showVisibilityIcon = true,
+    rightAccessory,
     ...props
 }) => {
     const { theme } = useTheme();
@@ -112,6 +114,8 @@ export const TVTextInput: React.FC<TVTextInputProps> = ({
                         />
                     </TouchableOpacity>
                 )}
+
+                {rightAccessory && rightAccessory}
             </View>
 
             {error && (

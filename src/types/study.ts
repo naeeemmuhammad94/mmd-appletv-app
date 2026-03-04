@@ -106,6 +106,8 @@ export interface StudySearchParams {
     search?: string;
     limit?: number;
     page?: number;
+    pagination?: boolean;
+    withoutPagination?: boolean;
     programIds?: string[];
     categoryIds?: string[];
     titles?: string[];

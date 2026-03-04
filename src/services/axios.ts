@@ -6,8 +6,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as Keychain from 'react-native-keychain';
 
-// Using the same API URL as the kiosk app
-const API_BASE_URL = 'https://staging-api.managemydojo.com/api/v1';
+// Using the same API URL as the kiosk app (Production)
+const API_BASE_URL = 'https://dojo-crm-api-new.managemydojo.com/api/v1';
 
 export const STORAGE_KEYS = {
     ACCESS_TOKEN: 'access_token',
@@ -93,6 +93,17 @@ export const axiosInstance = axios.create({
         'Content-Type': 'application/json',
         Accept: 'application/json',
     },
+    paramsSerializer: (params) => {
+        const searchParams = new URLSearchParams();
+        for (const key in params) {
+            if (Array.isArray(params[key])) {
+                params[key].forEach((val: any) => searchParams.append(`${key}[]`, val));
+            } else if (params[key] !== undefined && params[key] !== null) {
+                searchParams.append(key, params[key]);
+            }
+        }
+        return searchParams.toString();
+    }
 });
 
 /**
@@ -103,7 +114,7 @@ axiosInstance.interceptors.request.use(
         try {
             const token = await secureStorage.getToken();
             if (token) {
-                config.headers.Authorization = token;
+                config.headers.Authorization = `Bearer ${token}`;
             }
         } catch (error) {
             console.error('Error reading token:', error);
@@ -125,6 +136,7 @@ axiosInstance.interceptors.response.use(
     async (error: AxiosError) => {
         // On 401 Unauthorized, clear auth state
         if (error.response?.status === 401) {
+            console.log('[Axios] 401 Unauthorized on:', error.config?.url, '- clearing auth state');
             try {
                 await secureStorage.clearAll();
 

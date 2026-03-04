@@ -30,18 +30,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         ? { uri: image }
         : image || BackgroundImage;
 
-    const Container = withBackground ? ImageBackground : View;
-    const containerProps = withBackground ? {
-        source: imageSource,
-        style: styles.container,
-        imageStyle: styles.backgroundImage,
-        resizeMode: "cover" as const
-    } : {
-        style: styles.container
-    };
-
-    return (
-        <Container {...containerProps}>
+    const content = (
+        <>
             <View style={styles.contentOverlay}>
                 {/* Info Column - Left Side */}
                 <View style={styles.infoContainer}>
@@ -65,40 +55,57 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                     <Text style={styles.restartLink}>Restart Learning</Text>
                 </View>
 
-                {/* Play Button - Absolute Centered */}
-                <View style={styles.playButtonContainer}>
+                {/* Play Button - Absolute Centered (non-focusable to avoid tvOS crash) */}
+                <View style={styles.playButtonContainer} pointerEvents="none">
                     <PlayButton width={rs(120)} height={rs(120)} />
                 </View>
             </View>
 
             {/* Gradient Overlay for text readability */}
             <View style={styles.gradientOverlay} />
-        </Container>
+        </>
+    );
+
+    if (withBackground) {
+        return (
+            <ImageBackground
+                source={imageSource}
+                style={styles.container}
+                imageStyle={styles.backgroundImage}
+                resizeMode="cover"
+            >
+                {content}
+            </ImageBackground>
+        );
+    }
+
+    return (
+        <View style={styles.container}>
+            {content}
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
     container: {
         width: '100%',
-        height: rs(500), // Increased height for better look
+        height: rs(500),
         marginBottom: rs(40),
         justifyContent: 'center',
-        paddingHorizontal: 0, // Reset padding
+        paddingHorizontal: 0,
     },
-    backgroundImage: {
-        // No border radius needed for full bleed? Or maybe just simple cover
-    },
+    backgroundImage: {},
     contentOverlay: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: rs(60), // Add padding here
+        paddingHorizontal: rs(60),
         zIndex: 2,
         position: 'relative',
     },
     gradientOverlay: {
         ...StyleSheet.absoluteFillObject,
-        backgroundColor: 'rgba(0,0,0,0.4)', // Darken background for text
+        backgroundColor: 'rgba(0,0,0,0.4)',
         zIndex: 1,
     },
     infoContainer: {
@@ -111,16 +118,15 @@ const styles = StyleSheet.create({
         position: 'absolute',
         left: '50%',
         top: '50%',
-        transform: [{ translateX: -rs(60) }, { translateY: -rs(60) }], // Center based on size
+        transform: [{ translateX: -rs(60) }, { translateY: -rs(60) }],
         zIndex: 3,
-        // Shadow for play button
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.5,
         shadowRadius: 10,
     },
     headerTitle: {
-        fontSize: rs(56), // Larger title
+        fontSize: rs(56),
         fontWeight: 'bold',
         color: 'white',
         marginBottom: rs(12),

@@ -59,8 +59,21 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                 const userData = response.data;
 
                 // Store tokens securely
+                // The API may return token with 'Bearer ' prefix (as dojo-app handles).
+                // Strip it before storing so the axios interceptor can add it cleanly.
                 if (token && typeof token === 'string') {
-                    await secureStorage.setToken(token);
+                    const cleanToken = token.startsWith('Bearer ') ? token.replace('Bearer ', '') : token;
+                    await secureStorage.setToken(cleanToken);
+                    // Update local reference for the set() call below
+                    set({
+                        user: { ...userData, accessToken: cleanToken } as any,
+                        token: cleanToken,
+                        isAuthenticated: true,
+                        isLoading: false,
+                        apiError: null,
+                    });
+                } else {
+                    throw new Error('No valid token received from login response');
                 }
                 if (refreshToken && typeof refreshToken === 'string') {
                     await secureStorage.setRefreshToken(refreshToken);
@@ -74,14 +87,6 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
                     firstName: (userInfo as any).firstName || '',
                 };
                 await secureStorage.setUserData(JSON.stringify(essentialUserData));
-
-                set({
-                    user: { ...userData, accessToken: token as string },
-                    token: (token as string) || null,
-                    isAuthenticated: true,
-                    isLoading: false,
-                    apiError: null,
-                });
             } else {
                 const errorMessage = response?.message || 'Login failed - no data received';
                 throw new Error(errorMessage);

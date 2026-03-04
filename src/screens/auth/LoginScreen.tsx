@@ -46,7 +46,6 @@ export default function LoginScreen({ navigation }: Props) {
     return (
         <AuthLayout
             subtitle="Login to your Manage My Dojo account for access."
-            cardStyle={{ height: SCREEN_THEME.layout.cardHeight }}
         >
             <View style={styles.cardContent}>
                 {/* Error Message */}
@@ -95,35 +94,45 @@ export default function LoginScreen({ navigation }: Props) {
                                 />
                             )}
                         />
-                        <TouchableOpacity
-                            onPress={() => setShowPassword(!showPassword)}
-                            style={styles.showButton}
-                        >
-                            <Text style={styles.showButtonText}>
-                                {showPassword ? 'Hide' : 'Show'}
-                            </Text>
-                        </TouchableOpacity>
                     </View>
                 </View>
 
                 {/* Bottom Row Actions */}
                 <View style={styles.bottomRow}>
-                    <TouchableOpacity
-                        onPress={() => navigation.navigate('ForgotPassword')}
-                        style={styles.forgotPasswordButton}
-                    >
-                        <Text style={styles.forgotPasswordText}>
-                            Forgot Password
-                        </Text>
-                    </TouchableOpacity>
+                    <View style={styles.bottomColLeft}>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate('ForgotPassword')}
+                            style={styles.forgotPasswordButton}
+                        >
+                            <Text style={styles.forgotPasswordText}>
+                                Forgot Password
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
 
-                    <TVButton
-                        title="Sign In"
-                        onPress={handleSubmit(onSubmit)}
-                        isLoading={isLoading}
-                        style={styles.signInButton}
-                        textStyle={styles.signInButtonText}
-                    />
+                    <View style={styles.bottomColCenter}>
+                        <TVButton
+                            title="Sign In"
+                            onPress={handleSubmit(onSubmit)}
+                            isLoading={isLoading}
+                            style={styles.signInButton}
+                            textStyle={styles.signInButtonText}
+                        />
+                    </View>
+
+                    <View style={styles.bottomColRight}>
+                        <TouchableOpacity
+                            onPress={() => setShowPassword(!showPassword)}
+                            style={styles.showButton}
+                            focusable={true}
+                            accessible={true}
+                            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                            <Text style={styles.showButtonText}>
+                                {showPassword ? 'Hide Password' : 'Show Password'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
         </AuthLayout>
@@ -131,18 +140,11 @@ export default function LoginScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-    // container, bgGradient, content, header* removed as they are in AuthLayout
     cardContent: {
-        // Remove absolute positioning to let flex center it
         width: SCREEN_THEME.layout.cardContentWidth,
         gap: SCREEN_THEME.spacing.cardInnerGap,
-    },
-    // ... keep inputGroup and below
-
-    cardContent: {
-        // Remove absolute positioning to let flex center it
-        width: SCREEN_THEME.layout.cardContentWidth,
-        gap: SCREEN_THEME.spacing.cardInnerGap,
+        paddingTop: rs(60),
+        paddingBottom: rs(80), // Generous bottom padding so the focused button's scale effect isn't clipped
     },
     inputGroup: {
         gap: SCREEN_THEME.spacing.cardInnerGap,
@@ -173,16 +175,12 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     showButton: {
-        position: 'absolute',
-        right: rs(40),
-        paddingHorizontal: rs(40),
-        paddingVertical: rs(10),
-        borderRadius: rs(20),
+        paddingHorizontal: rs(24),
+        paddingVertical: rs(12),
+        borderRadius: rs(24),
         borderWidth: 2,
         borderColor: '#BFDBFE', // blue-200
         backgroundColor: 'transparent',
-        alignItems: 'center',
-        justifyContent: 'center',
     },
     showButtonText: {
         fontFamily: 'SF Pro Display',
@@ -192,14 +190,25 @@ const styles = StyleSheet.create({
     },
     bottomRow: {
         flexDirection: 'row',
-        justifyContent: 'center', // Center the Sign In button
+        justifyContent: 'space-between',
         alignItems: 'center',
-        marginTop: rs(72), // Calculated to match 540vh content height
+        marginTop: rs(50),
         width: '100%',
-        position: 'relative', // For absolute positioning context
+    },
+    bottomColLeft: {
+        flex: 1,
+        alignItems: 'flex-start',
+    },
+    bottomColCenter: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    bottomColRight: {
+        flex: 1,
+        alignItems: 'flex-end',
     },
     signInButton: {
-        paddingHorizontal: rs(40),
+        paddingHorizontal: rs(50),
         paddingVertical: rs(20),
         borderRadius: rs(20),
         borderWidth: 2,
@@ -215,11 +224,8 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
     },
     forgotPasswordButton: {
-        position: 'absolute',
-        left: 0,
         paddingVertical: rs(20),
         justifyContent: 'center',
-        alignItems: 'flex-start',
     },
     forgotPasswordText: {
         fontFamily: 'SF Pro Display',

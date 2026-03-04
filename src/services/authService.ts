@@ -28,7 +28,7 @@ export async function loginUser(payload: LoginPayload): Promise<CommonApiRespons
         return response.data;
     } catch (error) {
         const axiosError = error as AxiosError<CommonApiResponse<null>>;
-        console.error('[AuthService] Login error:', axiosError.response?.data || axiosError.message);
+        console.log('[AuthService] Login error:', axiosError.response?.data || axiosError.message);
         throw {
             success: false,
             error: true,

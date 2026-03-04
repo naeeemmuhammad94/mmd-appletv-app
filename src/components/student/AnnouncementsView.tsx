@@ -1,30 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
 import BackIcon from '../../../assets/icons/back-icon.svg';
-
-interface Announcement {
-    id: string;
-    title: string;
-    date: string;
-    description: string;
-}
-
-const ANNOUNCEMENTS_DATA: Announcement[] = [
-    {
-        id: '1',
-        title: 'New Training Videos Available',
-        date: 'May 3',
-        description: 'New karate and sparring videos have been added to the curriculum.',
-    },
-    {
-        id: '2',
-        title: 'Summer Training Camp',
-        date: 'June 1',
-        description: 'Registration is now open for our intensive summer training camp.',
-    },
-];
+import { useAnnouncementStore } from '../../store/useAnnouncementStore';
+import { format, parseISO } from 'date-fns';
+import { Announcement } from '../../types/announcement';
 
 interface AnnouncementsViewProps {
     ListHeaderComponent?: React.ReactElement;
@@ -32,8 +13,13 @@ interface AnnouncementsViewProps {
 
 export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ ListHeaderComponent }) => {
     const { theme } = useTheme();
+    const { announcements, loading, fetchAnnouncements } = useAnnouncementStore();
 
     const [selectedAnnouncement, setSelectedAnnouncement] = React.useState<Announcement | null>(null);
+
+    useEffect(() => {
+        fetchAnnouncements();
+    }, []);
 
     const handleBackPress = () => {
         setSelectedAnnouncement(null);
@@ -75,7 +61,9 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ ListHeader
                     {/* Date Section */}
                     <Text style={styles.label}>Date</Text>
                     <View style={[styles.valueContainer, styles.dateContainer]}>
-                        <Text style={styles.valueText}>{selectedAnnouncement.date}</Text>
+                        <Text style={styles.valueText}>
+                            {selectedAnnouncement.createdAt ? format(parseISO(selectedAnnouncement.createdAt), 'MMM d, yyyy') : ''}
+                        </Text>
                     </View>
                 </View>
             </View>
@@ -99,9 +87,14 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ ListHeader
             >
                 <View style={styles.cardHeader}>
                     <Text style={[styles.title, isFocused && styles.textFocused]}>{item.title}</Text>
-                    <Text style={[styles.date, isFocused && styles.textFocused]}>{item.date}</Text>
+                    <Text style={[styles.date, isFocused && styles.textFocused]}>
+                        {item.createdAt ? format(parseISO(item.createdAt), 'MMM d') : ''}
+                    </Text>
                 </View>
-                <Text style={[styles.description, isFocused && styles.textFocused]} numberOfLines={2}>{item.description}</Text>
+                <Text style={[styles.description, isFocused && styles.textFocused]} numberOfLines={2}>
+                    {/* Stripping potential HTML from description if necessary, though simple text is assumed */}
+                    {item.description?.replace(/<[^>]*>?/gm, '')}
+                </Text>
             </TouchableOpacity>
         );
     };
@@ -117,12 +110,20 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ ListHeader
         return renderDetailView();
     }
 
+    if (loading && announcements.length === 0) {
+        return (
+            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
             <FlatList
-                data={ANNOUNCEMENTS_DATA}
+                data={announcements}
                 renderItem={renderItem}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item._id}
                 ListHeaderComponent={
                     <>
                         {ListHeaderComponent}
