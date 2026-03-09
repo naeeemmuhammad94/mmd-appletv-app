@@ -3,66 +3,50 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-nativ
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import SearchIcon from '../../../assets/icons/search-icon.svg';
 
 interface HomeHeaderProps {
-    onSearchPress?: () => void;
-    onTabChange: (tab: 'Curriculum' | 'Announcements' | 'Search') => void;
+    onTabChange?: (tab: 'Curriculum' | 'Announcements') => void;
     onLogout: () => void;
-    activeTab?: 'Curriculum' | 'Announcements' | 'Search'; // Make it controllable
-    isSearchExpanded?: boolean;
-    onSearchToggle?: () => void;
-    searchQuery?: string;
-    onSearchQueryChange?: (text: string) => void;
+    activeTab?: 'Curriculum' | 'Announcements'; // Make it controllable
 }
 
 export const HomeHeader: React.FC<HomeHeaderProps> = ({
-    onSearchPress,
     onTabChange,
     onLogout,
     activeTab = 'Curriculum',
-    isSearchExpanded = false,
-    onSearchToggle,
-    searchQuery = '',
-    onSearchQueryChange,
 }) => {
     const { theme } = useTheme();
+    const navigation = useNavigation<NativeStackNavigationProp<any>>();
+    const route = useRoute();
 
     // Local state for focus tracking only
-    const [focusedTab, setFocusedTab] = React.useState<'Curriculum' | 'Announcements' | 'SearchInput' | null>(null);
+    const [focusedTab, setFocusedTab] = React.useState<'Curriculum' | 'Announcements' | null>(null);
     const [searchFocused, setSearchFocused] = React.useState(false);
 
-    const searchInputRef = useRef<TextInput>(null);
-
     const handleSearchPress = () => {
-        // When search is already expanded, do NOT toggle it off.
-        // The user might accidentally trigger this when the tvOS keyboard
-        // sends a Select event that propagates back to the search button.
-        if (isSearchExpanded) {
-            // Focus the text input instead of toggling off
-            searchInputRef.current?.focus();
-            return;
-        }
-        if (onSearchToggle) {
-            onSearchToggle();
+        if (route.name === 'Search') {
+            // Currently on Search screen, toggle implies going back
+            navigation.goBack();
         } else {
-            onTabChange('Search');
-            onSearchPress?.();
+            // Not on Search screen, toggle implies opening it
+            navigation.navigate('Search');
         }
     };
 
     const handleTabPress = (tab: 'Curriculum' | 'Announcements') => {
-        onTabChange(tab);
+        if (onTabChange) {
+            onTabChange(tab);
+        }
     };
 
     return (
         <View style={styles.container}>
             <View style={styles.contentContainer}>
                 {/* Main Navigation Pill */}
-                <View style={[
-                    styles.pillContainer,
-                    isSearchExpanded && styles.pillContainerExpanded
-                ]}>
+                <View style={styles.pillContainer}>
                     {/* Search Button */}
                     <TouchableOpacity
                         onPress={handleSearchPress}
@@ -70,7 +54,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                         onBlur={() => setSearchFocused(false)}
                         style={[
                             styles.searchButton,
-                            (searchFocused || activeTab === 'Search') && styles.focusedSearch // Apply style if focused OR active
+                            (searchFocused || route.name === 'Search') && styles.focusedSearch // Apply style if focused OR active
                         ]}
                     >
                         <SearchIcon
@@ -80,72 +64,52 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                         />
                     </TouchableOpacity>
 
-                    {isSearchExpanded ? (
-                        /* Expanded Search Input - UNCONTROLLED to prevent tvOS keyboard dismissal */
-                        <TextInput
-                            ref={searchInputRef}
-                            style={[
-                                styles.headerInput,
-                                focusedTab === 'SearchInput' && styles.headerInputFocused
-                            ]}
-                            defaultValue={searchQuery}
-                            onSubmitEditing={(e) => onSearchQueryChange?.(e.nativeEvent.text)}
-                            onEndEditing={(e) => onSearchQueryChange?.(e.nativeEvent.text)}
-                            placeholder="Search program"
-                            placeholderTextColor={focusedTab === 'SearchInput' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)'}
-                            onFocus={() => setFocusedTab('SearchInput')}
+                    {/* Normal Tabs */}
+                    <>
+                        {/* Divider */}
+                        <View style={styles.divider} />
+
+                        {/* Tabs */}
+                        <TouchableOpacity
+                            onPress={() => handleTabPress('Curriculum')}
+                            onFocus={() => setFocusedTab('Curriculum')}
                             onBlur={() => setFocusedTab(null)}
-                            blurOnSubmit={false}
-                            returnKeyType="search"
-                        />
-                    ) : (
-                        /* Normal Tabs */
-                        <>
-                            {/* Divider */}
-                            <View style={styles.divider} />
+                            style={[
+                                styles.tab,
+                                activeTab === 'Curriculum' && styles.activeTab,
+                                focusedTab === 'Curriculum' && activeTab !== 'Curriculum' && styles.focusedItem, // Only apply white bg if NOT active
+                                focusedTab === 'Curriculum' && activeTab === 'Curriculum' && styles.activeFocusedTab // Apply border if active AND focused
+                            ]}
+                        >
+                            <Text style={[
+                                styles.tabText,
+                                activeTab === 'Curriculum' ? styles.activeTabText : styles.inactiveTabText,
+                                focusedTab === 'Curriculum' && activeTab !== 'Curriculum' && { color: theme.colors.background } // Only change text color if NOT active
+                            ]}>
+                                Curriculum
+                            </Text>
+                        </TouchableOpacity>
 
-                            {/* Tabs */}
-                            <TouchableOpacity
-                                onPress={() => handleTabPress('Curriculum')}
-                                onFocus={() => setFocusedTab('Curriculum')}
-                                onBlur={() => setFocusedTab(null)}
-                                style={[
-                                    styles.tab,
-                                    activeTab === 'Curriculum' && styles.activeTab,
-                                    focusedTab === 'Curriculum' && activeTab !== 'Curriculum' && styles.focusedItem, // Only apply white bg if NOT active
-                                    focusedTab === 'Curriculum' && activeTab === 'Curriculum' && styles.activeFocusedTab // Apply border if active AND focused
-                                ]}
-                            >
-                                <Text style={[
-                                    styles.tabText,
-                                    activeTab === 'Curriculum' ? styles.activeTabText : styles.inactiveTabText,
-                                    focusedTab === 'Curriculum' && activeTab !== 'Curriculum' && { color: theme.colors.background } // Only change text color if NOT active
-                                ]}>
-                                    Curriculum
-                                </Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                onPress={() => handleTabPress('Announcements')}
-                                onFocus={() => setFocusedTab('Announcements')}
-                                onBlur={() => setFocusedTab(null)}
-                                style={[
-                                    styles.tab,
-                                    activeTab === 'Announcements' && styles.activeTab,
-                                    focusedTab === 'Announcements' && activeTab !== 'Announcements' && styles.focusedItem,
-                                    focusedTab === 'Announcements' && activeTab === 'Announcements' && styles.activeFocusedTab
-                                ]}
-                            >
-                                <Text style={[
-                                    styles.tabText,
-                                    activeTab === 'Announcements' ? styles.activeTabText : styles.inactiveTabText,
-                                    focusedTab === 'Announcements' && activeTab !== 'Announcements' && { color: theme.colors.background }
-                                ]}>
-                                    Announcements
-                                </Text>
-                            </TouchableOpacity>
-                        </>
-                    )}
+                        <TouchableOpacity
+                            onPress={() => handleTabPress('Announcements')}
+                            onFocus={() => setFocusedTab('Announcements')}
+                            onBlur={() => setFocusedTab(null)}
+                            style={[
+                                styles.tab,
+                                activeTab === 'Announcements' && styles.activeTab,
+                                focusedTab === 'Announcements' && activeTab !== 'Announcements' && styles.focusedItem,
+                                focusedTab === 'Announcements' && activeTab === 'Announcements' && styles.activeFocusedTab
+                            ]}
+                        >
+                            <Text style={[
+                                styles.tabText,
+                                activeTab === 'Announcements' ? styles.activeTabText : styles.inactiveTabText,
+                                focusedTab === 'Announcements' && activeTab !== 'Announcements' && { color: theme.colors.background }
+                            ]}>
+                                Announcements
+                            </Text>
+                        </TouchableOpacity>
+                    </>
                 </View>
             </View>
         </View>
@@ -180,10 +144,6 @@ const styles = StyleSheet.create({
         minWidth: rs(600),
         justifyContent: 'space-between',
     },
-    pillContainerExpanded: {
-        justifyContent: 'flex-start', // Align left when expanded
-        paddingRight: rs(20),
-    },
     divider: {
         width: 1,
         height: rs(32),
@@ -202,20 +162,6 @@ const styles = StyleSheet.create({
         borderColor: 'white',
         backgroundColor: 'rgba(255,255,255,0.1)',
         transform: [{ scale: 1.05 }],
-    },
-    headerInput: {
-        flex: 1,
-        marginLeft: rs(20),
-        paddingHorizontal: rs(16),
-        color: 'white',
-        fontSize: rs(24),
-        fontFamily: 'SF Pro Display',
-        height: rs(60), // Natively better height for TV
-        paddingVertical: 0,
-        borderRadius: rs(30),
-    },
-    headerInputFocused: {
-        color: 'black',
     },
     tab: {
         paddingVertical: rs(16),

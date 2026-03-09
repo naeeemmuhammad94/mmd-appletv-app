@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, ImageSourcePropType } from 'react-native';
+import { View, Text, StyleSheet, Image, ImageSourcePropType, StyleProp, ViewStyle } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { FocusableCard } from './FocusableCard';
 import { useTheme } from '../../theme';
@@ -15,6 +15,7 @@ interface ProgramCardProps {
     onPress: () => void;
     width?: number;
     height?: number;
+    style?: StyleProp<ViewStyle>;
 }
 
 export const ProgramCard: React.FC<ProgramCardProps> = ({
@@ -26,6 +27,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
     onPress,
     width = rs(380), // Approx w-96
     height = rs(240), // Approx h-64
+    style
 }) => {
     const { theme } = useTheme();
     const [isFocused, setIsFocused] = useState(false);
@@ -51,6 +53,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
                     borderWidth: isFocused ? rs(4) : rs(2),
                     borderColor: isFocused ? theme.colors.primary : 'rgba(100,100,100, 0.5)',
                 },
+                style
             ]}
         >
             <View

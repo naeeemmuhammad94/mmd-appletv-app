@@ -11,8 +11,6 @@ import { HorizontalRow } from '../../components/ui/HorizontalRow';
 import { ProgramCard } from '../../components/ui/ProgramCard';
 import { TrainingAreaCard } from '../../components/ui/TrainingAreaCard';
 import { AnnouncementsView } from '../../components/student/AnnouncementsView';
-import { SearchView } from '../../components/student/SearchView';
-
 // Data & Types
 import { StudyCategory, StudyProgram } from '../../types/study';
 
@@ -47,19 +45,12 @@ const HomeScreen: React.FC = () => {
     }, [categories, trainingAreas, contentItems, studyError]);
 
     // State for View Switching
-    const [currentTab, setCurrentTab] = React.useState<'Curriculum' | 'Announcements' | 'Search'>('Curriculum');
-
-    // Search State
-    const [isSearchActive, setIsSearchActive] = React.useState(false);
-    const [searchQuery, setSearchQuery] = React.useState('');
+    const [currentTab, setCurrentTab] = React.useState<'Curriculum' | 'Announcements'>('Curriculum');
 
     // Filtered Data
     const filteredPrograms = React.useMemo(() => {
-        if (!searchQuery) return categories;
-        return categories.filter(category =>
-            category.name.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [searchQuery, categories]);
+        return categories;
+    }, [categories]);
 
     const recentlyWatched = React.useMemo(() => {
         if (!contentItems || contentItems.length === 0) return [];
@@ -76,16 +67,6 @@ const HomeScreen: React.FC = () => {
         }
         return contentItems && contentItems.length > 0 ? contentItems[0] : null;
     }, [recentlyWatched, contentItems]);
-
-    const handleSearchToggle = () => {
-        setIsSearchActive(prev => !prev);
-        if (!isSearchActive) {
-            setCurrentTab('Search');
-        } else {
-            setCurrentTab('Curriculum');
-            setSearchQuery('');
-        }
-    };
 
     const handleProgramPress = (item: StudyProgram) => {
         navigation.navigate('ProgramDetail', { id: item._id, type: 'program' });
@@ -109,23 +90,9 @@ const HomeScreen: React.FC = () => {
     const renderHeader = () => (
         <View style={styles.headerWrapper}>
             <HomeHeader
-                onSearchPress={() => { }} // Handled via toggle now
-                onTabChange={(tab) => {
-                    setCurrentTab(tab);
-                    if (tab !== 'Search') {
-                        setIsSearchActive(false); // Close search if navigating away
-                    } else {
-                        // If clicking Search tab explicitly (if even possible via tabs), open drawer?
-                        // Tabs are hidden when search is active, so this is only if we are on Search tab but drawer is closed.
-                        setIsSearchActive(true);
-                    }
-                }}
+                onTabChange={(tab) => setCurrentTab(tab)}
                 onLogout={logout}
                 activeTab={currentTab}
-                isSearchExpanded={isSearchActive}
-                onSearchToggle={handleSearchToggle}
-                searchQuery={searchQuery}
-                onSearchQueryChange={setSearchQuery}
             />
         </View>
     );
@@ -136,18 +103,7 @@ const HomeScreen: React.FC = () => {
             {/* The HeroSection handles its own background now */}
 
             {/* View Content */}
-            {currentTab === 'Search' ? (
-                <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-                    {renderHeader()}
-                    <View style={{ flex: 1 }}>
-                        <SearchView
-                            data={filteredPrograms as any}
-                            searchQuery={searchQuery}
-                            onProgramPress={(item) => navigation.navigate('ProgramDetail', { id: item._id, type: 'category' })}
-                        />
-                    </View>
-                </View>
-            ) : currentTab === 'Announcements' ? (
+            {currentTab === 'Announcements' ? (
                 <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
                     {renderHeader()}
                     <View style={{ flex: 1 }}>
