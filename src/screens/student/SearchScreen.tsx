@@ -144,9 +144,7 @@ const SearchScreen = () => {
                     </View>
                 ) : (
                     <>
-                        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                            {submittedQuery ? `Results for "${submittedQuery}"` : 'All Programs'}
-                        </Text>
+
                         {filteredData.length === 0 ? (
                             <Text style={{ color: theme.colors.textSecondary, fontSize: rs(24) }}>
                                 No results found.

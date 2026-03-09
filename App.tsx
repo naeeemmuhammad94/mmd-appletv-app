@@ -5,6 +5,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { queryClient } from './src/services/api';
 import { ThemeContext, darkTheme } from './src/theme';
 import { RootNavigator } from './src/navigation';
+import { LogBox } from 'react-native';
+
+LogBox.ignoreAllLogs(true);
 
 export default function App() {
   return (
