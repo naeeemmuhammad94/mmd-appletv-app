@@ -33,6 +33,11 @@ const ProgramDetailScreen: React.FC = () => {
     const [programContent, setProgramContent] = React.useState<StudyContentItem[]>([]);
     const [loading, setLoading] = React.useState(true);
 
+    // Default to the first program if viewing a category
+    const [selectedProgramId, setSelectedProgramId] = React.useState<string | null>(
+        type === 'category' && programs.length > 0 ? programs[0]._id : null
+    );
+
     // Resolve display name from the relevant store list
     const displayName = React.useMemo(() => {
         if (type === 'category') {
@@ -61,31 +66,42 @@ const ProgramDetailScreen: React.FC = () => {
         return [];
     }, [type, id, subCategories]);
 
+    // Make sure we have a selected program if programs lazy-load or update
+    React.useEffect(() => {
+        if (type === 'category' && programs.length > 0 && !selectedProgramId) {
+            setSelectedProgramId(programs[0]._id);
+        }
+    }, [type, programs, selectedProgramId]);
+
     React.useEffect(() => {
         const loadContent = async () => {
+            // Wait for a program to be selected if we are in category mode and have programs
+            if (type === 'category' && programs.length > 0 && !selectedProgramId) return;
+
             setLoading(true);
             try {
                 if (type === 'category') {
-                    // Fetch content for this category + fetch its sub-categories
+                    // Fetch content for this category filtered by the selected program
                     await Promise.all([
-                        fetchStudyContent({ categoryIds: [id], limit: 500, page: 1, withoutPagination: true }),
+                        fetchStudyContent({
+                            categoryIds: [id],
+                            programIds: selectedProgramId ? [selectedProgramId] : undefined
+                        }),
                         fetchSubCategories(id),
                     ]);
                 } else {
                     // Fetch content for this program
-                    await fetchStudyContent({ programIds: [id], limit: 500, page: 1 });
+                    await fetchStudyContent({ programIds: [id] });
                 }
                 const { contentItems, subCategories: allSubCats } = useStudyStore.getState();
                 setProgramContent(contentItems);
 
                 // Debug logging
-                console.log('[ProgramDetail] type:', type, 'id:', id);
+                console.log('[ProgramDetail] type:', type, 'id:', id, 'selectedProgram:', selectedProgramId);
                 console.log('[ProgramDetail] contentItems loaded:', contentItems.length);
                 if (contentItems.length > 0) {
-                    console.log('[ProgramDetail] First item subCategoryId:', contentItems[0].subCategoryId);
                     console.log('[ProgramDetail] First item programs:', JSON.stringify(contentItems[0].programs?.map(p => p.name)));
                 }
-                console.log('[ProgramDetail] subCategories for id:', JSON.stringify(allSubCats[id] || 'none'));
             } catch (err) {
                 console.error("Failed to load program content", err);
             } finally {
@@ -96,7 +112,7 @@ const ProgramDetailScreen: React.FC = () => {
         loadContent();
 
         return () => clearError();
-    }, [id, type]);
+    }, [id, type, selectedProgramId, programs.length]);
 
     // Group content into sections
     const sections = React.useMemo(() => {
@@ -183,21 +199,8 @@ const ProgramDetailScreen: React.FC = () => {
     // Use flat grid when type === 'category' and no sections could be formed
     const useFlatGrid = type === 'category' && sections.length === 0 && programContent.length > 0;
 
-    if (loading) {
-        return (
-            <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
-            </View>
-        );
-    }
-
-    if (programContent.length === 0) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.errorText}>No content found</Text>
-            </View>
-        );
-    }
+    // Hero Title: use the first video's title if available, otherwise fallback to the category/program name
+    const heroTitle = programContent[0]?.title || displayName;
 
     // Hero image: first item's stripe image, category image, or fallback
     const heroImage = {
@@ -277,6 +280,42 @@ const ProgramDetailScreen: React.FC = () => {
         </View>
     );
 
+    const renderProgramChips = () => {
+        if (type !== 'category' || programs.length === 0) return null;
+
+        return (
+            <View style={styles.chipsWrapper}>
+                <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.chipsContainer}
+                >
+                    {programs.map(program => {
+                        const isSelected = program._id === selectedProgramId;
+                        return (
+                            <TouchableOpacity
+                                key={program._id}
+                                onPress={() => setSelectedProgramId(program._id)}
+                                style={[
+                                    styles.chip,
+                                    isSelected && styles.chipSelected
+                                ]}
+                                activeOpacity={0.7}
+                            >
+                                <Text style={[
+                                    styles.chipText,
+                                    isSelected && styles.chipTextSelected
+                                ]}>
+                                    {program.name.toUpperCase()}
+                                </Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
+            </View>
+        );
+    };
+
     return (
         <View style={styles.container}>
             <ScrollView
@@ -316,17 +355,33 @@ const ProgramDetailScreen: React.FC = () => {
 
                             {/* Title */}
                             <Text style={styles.categoryLabel}>
-                                {displayName}
+                                {heroTitle}
                             </Text>
                         </View>
                     </ImageBackground>
                 </View>
 
+                {/* Program Filter Chips (Category View Only) */}
+                {renderProgramChips()}
+
                 {/* Content Sections */}
-                {useFlatGrid
-                    ? renderFlatGrid()
-                    : sections.map((tier, index) => renderTierSection(tier, index))
-                }
+                {loading ? (
+                    <View style={styles.loadingContainer}>
+                        <ActivityIndicator size="large" color={theme.colors.primary} />
+                    </View>
+                ) : programContent.length === 0 ? (
+                    <View style={styles.emptyContentContainer}>
+                        <Text style={styles.emptyContentText}>
+                            {type === 'category'
+                                ? "No lessons found for this program in this training area."
+                                : "No lessons found."}
+                        </Text>
+                    </View>
+                ) : (
+                    useFlatGrid
+                        ? renderFlatGrid()
+                        : sections.map((tier, index) => renderTierSection(tier, index))
+                )}
 
                 {/* Bottom spacing */}
                 <View style={{ height: rs(60) }} />
@@ -351,6 +406,47 @@ const styles = StyleSheet.create({
         fontSize: rs(24),
         textAlign: 'center',
         marginTop: rs(100),
+    },
+    emptyContentContainer: {
+        padding: rs(60),
+        alignItems: 'center',
+    },
+    loadingContainer: {
+        padding: rs(60),
+        alignItems: 'center',
+    },
+    emptyContentText: {
+        color: 'rgba(255, 255, 255, 0.6)',
+        fontSize: rs(24),
+        textAlign: 'center',
+    },
+    // Program Chips
+    chipsWrapper: {
+        marginBottom: rs(20),
+    },
+    chipsContainer: {
+        paddingHorizontal: rs(60),
+        gap: rs(16),
+    },
+    chip: {
+        paddingHorizontal: rs(24),
+        paddingVertical: rs(12),
+        borderRadius: rs(40),
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        borderWidth: 2,
+        borderColor: 'transparent',
+    },
+    chipSelected: {
+        backgroundColor: '#007AFF', // Standard iOS/tvOS blue highlight
+        borderColor: '#007AFF',
+    },
+    chipText: {
+        color: 'white',
+        fontSize: rs(20),
+        fontWeight: '600',
+    },
+    chipTextSelected: {
+        color: 'white',
     },
     // Hero
     heroWrapper: {
