@@ -32,11 +32,20 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
     const [focusedTab, setFocusedTab] = React.useState<'Curriculum' | 'Announcements' | 'SearchInput' | null>(null);
     const [searchFocused, setSearchFocused] = React.useState(false);
 
+    const searchInputRef = useRef<TextInput>(null);
+
     const handleSearchPress = () => {
+        // When search is already expanded, do NOT toggle it off.
+        // The user might accidentally trigger this when the tvOS keyboard
+        // sends a Select event that propagates back to the search button.
+        if (isSearchExpanded) {
+            // Focus the text input instead of toggling off
+            searchInputRef.current?.focus();
+            return;
+        }
         if (onSearchToggle) {
             onSearchToggle();
         } else {
-            // Fallback for older behavior if needed, or just switch tab
             onTabChange('Search');
             onSearchPress?.();
         }
@@ -72,15 +81,22 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                     </TouchableOpacity>
 
                     {isSearchExpanded ? (
-                        /* Expanded Search Input */
+                        /* Expanded Search Input - UNCONTROLLED to prevent tvOS keyboard dismissal */
                         <TextInput
-                            style={styles.headerInput}
-                            value={searchQuery}
-                            onChangeText={onSearchQueryChange}
+                            ref={searchInputRef}
+                            style={[
+                                styles.headerInput,
+                                focusedTab === 'SearchInput' && styles.headerInputFocused
+                            ]}
+                            defaultValue={searchQuery}
+                            onSubmitEditing={(e) => onSearchQueryChange?.(e.nativeEvent.text)}
+                            onEndEditing={(e) => onSearchQueryChange?.(e.nativeEvent.text)}
                             placeholder="Search program"
-                            placeholderTextColor="rgba(255,255,255,0.5)"
-                            autoFocus={true}
+                            placeholderTextColor={focusedTab === 'SearchInput' ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.5)'}
                             onFocus={() => setFocusedTab('SearchInput')}
+                            onBlur={() => setFocusedTab(null)}
+                            blurOnSubmit={false}
+                            returnKeyType="search"
                         />
                     ) : (
                         /* Normal Tabs */
@@ -131,20 +147,6 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                         </>
                     )}
                 </View>
-
-                {/* Logout Button (Right aligned) - Only show if not expanded OR maybe keep it? Design request didn't specify, but usually drawer takes space. 
-                    The mock shows profile/help on right even with search. Keeping it. 
-                */}
-                <TouchableOpacity
-                    onPress={onLogout}
-                    onFocus={() => setFocusedTab(null)} // Clear tab focus
-                    style={[
-                        styles.logoutButton,
-                        // Focused state styling if needed
-                    ]}
-                >
-                    <Icon name="power-settings-new" size={rs(32)} color={theme.colors.text} />
-                </TouchableOpacity>
             </View>
         </View>
     );
@@ -203,11 +205,17 @@ const styles = StyleSheet.create({
     },
     headerInput: {
         flex: 1,
-        marginLeft: rs(10),
+        marginLeft: rs(20),
+        paddingHorizontal: rs(16),
         color: 'white',
         fontSize: rs(24),
         fontFamily: 'SF Pro Display',
-        height: '100%',
+        height: rs(60), // Natively better height for TV
+        paddingVertical: 0,
+        borderRadius: rs(30),
+    },
+    headerInputFocused: {
+        color: 'black',
     },
     tab: {
         paddingVertical: rs(16),

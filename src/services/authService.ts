@@ -88,7 +88,8 @@ export async function logoutUser(): Promise<void> {
         await axiosInstance.get(ApiEndpoints.Logout);
     } catch (error) {
         // Silently fail - we'll clear local storage anyway
-        console.error('[AuthService] Logout error (non-fatal):', error);
+        // Using console.log instead of error to prevent React Native red screen popup
+        console.log('[AuthService] Logout error (non-fatal):', error);
     }
 }
 

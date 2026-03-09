@@ -14,7 +14,7 @@ import { AnnouncementsView } from '../../components/student/AnnouncementsView';
 import { SearchView } from '../../components/student/SearchView';
 
 // Data & Types
-import { StudyCategory } from '../../types/study';
+import { StudyCategory, StudyProgram } from '../../types/study';
 
 // Assets
 const BackgroundImage = require('../../../assets/images/student-background.png');
@@ -23,22 +23,27 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StudentStackParamList } from '../../navigation';
 import { useStudyStore } from '../../store/useStudyStore';
+import { useWatchHistoryStore } from '../../store/useWatchHistoryStore';
+import { StudyContentItem } from '../../types/study';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<StudentStackParamList, 'Home'>;
 
 const HomeScreen: React.FC = () => {
     const navigation = useNavigation<HomeScreenNavigationProp>();
     const { logout } = useAuthStore();
-    const { categories, trainingAreas, contentItems, fetchCategories, fetchTrainingAreas, error: studyError, loadingCategories } = useStudyStore();
+    const { categories, programs, trainingAreas, contentItems, fetchCategories, fetchPrograms, fetchTrainingAreas, error: studyError, loadingCategories } = useStudyStore();
+    const { history, loadHistory } = useWatchHistoryStore();
     const { theme } = useTheme();
 
     React.useEffect(() => {
         fetchCategories();
+        fetchPrograms();
         fetchTrainingAreas();
+        loadHistory();
     }, []);
 
     React.useEffect(() => {
-        console.log('[HomeScreen] categories:', categories.length, 'trainingAreas:', trainingAreas.length, 'contentItems:', contentItems.length, 'error:', studyError);
+        // Removed debug logging
     }, [categories, trainingAreas, contentItems, studyError]);
 
     // State for View Switching
@@ -56,24 +61,21 @@ const HomeScreen: React.FC = () => {
         );
     }, [searchQuery, categories]);
 
-    // Unique Training Area Tags from Content Items
-    const uniqueTags = React.useMemo(() => {
-        const tagsMap = new Map<string, any>();
-        contentItems.forEach(item => {
-            if (item.tags) {
-                item.tags.forEach(tag => {
-                    if (!tagsMap.has(tag._id) && tag.name) {
-                        tagsMap.set(tag._id, {
-                            id: tag._id,
-                            title: tag.name,
-                            image: require('../../../assets/dummy/training-area/1.png') // Fallback image
-                        });
-                    }
-                });
-            }
-        });
-        return Array.from(tagsMap.values());
-    }, [contentItems]);
+    const recentlyWatched = React.useMemo(() => {
+        if (!contentItems || contentItems.length === 0) return [];
+        return history
+            .map(h => contentItems.find(c => c._id === h.contentId))
+            .filter(Boolean)
+            .slice(0, 10) as StudyContentItem[];
+    }, [history, contentItems]);
+
+    // Hero item logic: most recent watched OR first available content
+    const heroItem = React.useMemo(() => {
+        if (recentlyWatched.length > 0) {
+            return recentlyWatched[0];
+        }
+        return contentItems && contentItems.length > 0 ? contentItems[0] : null;
+    }, [recentlyWatched, contentItems]);
 
     const handleSearchToggle = () => {
         setIsSearchActive(prev => !prev);
@@ -85,12 +87,22 @@ const HomeScreen: React.FC = () => {
         }
     };
 
-    const handleProgramPress = (item: StudyCategory) => {
-        navigation.navigate('ProgramDetail', { programId: item._id });
+    const handleProgramPress = (item: StudyProgram) => {
+        navigation.navigate('ProgramDetail', { id: item._id, type: 'program' });
     };
 
-    const handleTrainingAreaPress = (item: any) => {
-        console.log('Training Area pressed:', item.title);
+    const handleTrainingAreaPress = (item: StudyCategory) => {
+        navigation.navigate('ProgramDetail', { id: item._id, type: 'category' });
+    };
+
+    const handlePlayContent = (item: StudyContentItem) => {
+        if (item?.contentLink && (item.contentLink.includes('vimeo') || item.contentLink.includes('mp4') || item.contentLink.includes('m3u8'))) {
+            navigation.navigate('VideoPlayer', {
+                videoUrl: item.contentLink,
+                title: item.title,
+                contentId: item._id,
+            });
+        }
     };
 
     // Shared Header Component
@@ -125,13 +137,23 @@ const HomeScreen: React.FC = () => {
 
             {/* View Content */}
             {currentTab === 'Search' ? (
-                <SearchView
-                    ListHeaderComponent={renderHeader()}
-                    data={filteredPrograms as any}
-                    searchQuery={searchQuery}
-                />
+                <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+                    {renderHeader()}
+                    <View style={{ flex: 1 }}>
+                        <SearchView
+                            data={filteredPrograms as any}
+                            searchQuery={searchQuery}
+                            onProgramPress={(item) => navigation.navigate('ProgramDetail', { id: item._id, type: 'category' })}
+                        />
+                    </View>
+                </View>
             ) : currentTab === 'Announcements' ? (
-                <AnnouncementsView ListHeaderComponent={renderHeader()} />
+                <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+                    {renderHeader()}
+                    <View style={{ flex: 1 }}>
+                        <AnnouncementsView />
+                    </View>
+                </View>
             ) : (
                 /* Curriculum View */
                 <ScrollView
@@ -149,10 +171,10 @@ const HomeScreen: React.FC = () => {
 
                         <View style={styles.heroContainer}>
                             <HeroSection
-                                title="Today's Training"
-                                subtitle="Fundamental Balance & Control"
-                                progressText="Videos 2 of 6"
-                                onContinuePress={() => console.log('Continue Training pressed')}
+                                title="Continue Watching"
+                                subtitle={heroItem ? heroItem.title : "Start Learning"}
+                                progressText={heroItem?.category?.name || ""}
+                                onContinuePress={() => heroItem && handlePlayContent(heroItem)}
                                 withBackground={false}
                             />
                         </View>
@@ -161,13 +183,13 @@ const HomeScreen: React.FC = () => {
                     <View style={styles.contentSection}>
                         <HorizontalRow
                             title="Programs"
-                            data={categories}
-                            keyExtractor={(item: StudyCategory) => item._id}
-                            renderItem={({ item }: { item: StudyCategory }) => (
+                            data={programs}
+                            keyExtractor={(item: StudyProgram) => item._id}
+                            renderItem={({ item }: { item: StudyProgram }) => (
                                 <ProgramCard
                                     title={item.name}
-                                    progress={0} // Can calculate this later if needed
-                                    image={item.image ? { uri: item.image } : require('../../../assets/dummy/programs/1.png')}
+                                    progress={0}
+                                    image={require('../../../assets/dummy/programs/1.png')}
                                     onPress={() => handleProgramPress(item)}
                                 />
                             )}
@@ -186,17 +208,17 @@ const HomeScreen: React.FC = () => {
                             )}
                         />
 
-                        {contentItems && contentItems.length > 0 && (
+                        {recentlyWatched.length > 0 && (
                             <HorizontalRow
                                 title="Recently Watched"
-                                data={contentItems.slice(0, 10)}
-                                keyExtractor={(item) => item._id}
-                                renderItem={({ item }) => (
+                                data={recentlyWatched}
+                                keyExtractor={(item: StudyContentItem) => item._id}
+                                renderItem={({ item }: { item: StudyContentItem }) => (
                                     <ProgramCard
                                         title={item.title}
                                         progress={0}
                                         image={item.ranks && item.ranks[0]?.stripeImage ? { uri: item.ranks[0].stripeImage } : require('../../../assets/dummy/programs/2.png')}
-                                        onPress={() => console.log('Recent play')}
+                                        onPress={() => handlePlayContent(item)}
                                     />
                                 )}
                             />

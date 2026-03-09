@@ -4,14 +4,25 @@ import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
 import BackIcon from '../../../assets/icons/back-icon.svg';
 import { useAnnouncementStore } from '../../store/useAnnouncementStore';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 import { Announcement } from '../../types/announcement';
 
-interface AnnouncementsViewProps {
-    ListHeaderComponent?: React.ReactElement;
-}
+interface AnnouncementsViewProps { }
 
-export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ ListHeaderComponent }) => {
+const safeFormatDate = (dateString?: string, formatStr: string = 'MMM d') => {
+    if (!dateString) return '';
+    try {
+        const parsed = parseISO(dateString);
+        if (isValid(parsed)) {
+            return format(parsed, formatStr);
+        }
+        return '';
+    } catch {
+        return '';
+    }
+};
+
+export const AnnouncementsView: React.FC<AnnouncementsViewProps> = () => {
     const { theme } = useTheme();
     const { announcements, loading, fetchAnnouncements } = useAnnouncementStore();
 
@@ -62,7 +73,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ ListHeader
                     <Text style={styles.label}>Date</Text>
                     <View style={[styles.valueContainer, styles.dateContainer]}>
                         <Text style={styles.valueText}>
-                            {selectedAnnouncement.createdAt ? format(parseISO(selectedAnnouncement.createdAt), 'MMM d, yyyy') : ''}
+                            {safeFormatDate(selectedAnnouncement.createdAt, 'MMM d, yyyy')}
                         </Text>
                     </View>
                 </View>
@@ -88,7 +99,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ ListHeader
                 <View style={styles.cardHeader}>
                     <Text style={[styles.title, isFocused && styles.textFocused]}>{item.title}</Text>
                     <Text style={[styles.date, isFocused && styles.textFocused]}>
-                        {item.createdAt ? format(parseISO(item.createdAt), 'MMM d') : ''}
+                        {safeFormatDate(item.createdAt, 'MMM d')}
                     </Text>
                 </View>
                 <Text style={[styles.description, isFocused && styles.textFocused]} numberOfLines={2}>
@@ -125,10 +136,7 @@ export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({ ListHeader
                 renderItem={renderItem}
                 keyExtractor={(item) => item._id}
                 ListHeaderComponent={
-                    <>
-                        {ListHeaderComponent}
-                        <Text style={styles.header}>Announcements</Text>
-                    </>
+                    <Text style={styles.header}>Announcements</Text>
                 }
                 contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}

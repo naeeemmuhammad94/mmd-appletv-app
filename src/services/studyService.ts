@@ -14,6 +14,7 @@ import type {
     StudyCategoryListing,
     StudySubCategory,
     StudySearchParams,
+    StudyProgram,
 } from '../types/study';
 
 /**
@@ -134,12 +135,56 @@ export async function getSubCategoriesByCategoryId(
     }
 }
 
+/**
+ * Get programs, tags, and clubs
+ * Returns { programs: [...], tags: [...], clubs: [...] }
+ */
+export async function getPrograms(): Promise<CommonApiResponse<{ programs: StudyProgram[]; tags: any[]; clubs: any[] }>> {
+    try {
+        const response = await axiosInstance.get<CommonApiResponse<{ programs: StudyProgram[]; tags: any[]; clubs: any[] }>>(
+            ApiEndpoints.GetPrograms
+        );
+        return response.data;
+    } catch (error) {
+        const axiosError = error as AxiosError<CommonApiResponse<null>>;
+        throw {
+            success: false,
+            error: true,
+            message: axiosError.response?.data?.message || 'Failed to fetch programs.',
+            data: null,
+        };
+    }
+}
+
+/**
+ * Get all sub-categories globally
+ * GET /study-category/get-all-sub-category
+ */
+export async function getAllSubCategories(): Promise<CommonApiResponse<StudySubCategory[]>> {
+    try {
+        const response = await axiosInstance.get<CommonApiResponse<StudySubCategory[]>>(
+            ApiEndpoints.GetAllSubCategories
+        );
+        return response.data;
+    } catch (error) {
+        const axiosError = error as AxiosError<CommonApiResponse<null>>;
+        throw {
+            success: false,
+            error: true,
+            message: axiosError.response?.data?.message || 'Failed to fetch all sub-categories.',
+            data: null,
+        };
+    }
+}
+
 export const studyService = {
     getStudyContentForContact,
     getStudyContent,
     getStudyContentById,
     getStudyCategories,
     getSubCategoriesByCategoryId,
+    getPrograms,
+    getAllSubCategories,
 };
 
 export default studyService;

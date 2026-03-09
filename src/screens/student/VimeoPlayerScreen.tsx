@@ -12,6 +12,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StudentStackParamList } from '../../navigation';
 import { rs } from '../../theme/responsive';
 import BackIcon from '../../../assets/icons/back-icon.svg';
+import { useWatchHistoryStore } from '../../store/useWatchHistoryStore';
 
 type VimeoPlayerRouteProp = RouteProp<StudentStackParamList, 'VideoPlayer'>;
 type VimeoPlayerNavigationProp = NativeStackNavigationProp<StudentStackParamList, 'VideoPlayer'>;
@@ -54,7 +55,8 @@ function extractHLSUrl(html: string): string | null {
 const VimeoPlayerScreen: React.FC = () => {
     const navigation = useNavigation<VimeoPlayerNavigationProp>();
     const route = useRoute<VimeoPlayerRouteProp>();
-    const { videoUrl, title } = route.params;
+    const { videoUrl, title, contentId } = route.params;
+    const { addToHistory } = useWatchHistoryStore();
 
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -124,8 +126,23 @@ const VimeoPlayerScreen: React.FC = () => {
     };
 
     useEffect(() => {
-        playVideo(videoUrl);
-    }, [videoUrl]);
+        let isMounted = true;
+
+        if (contentId) {
+            addToHistory({ contentId, title: title || 'Unknown Video' });
+        }
+
+        const fetchVimeoHLS = async () => {
+            if (isMounted) {
+                playVideo(videoUrl);
+            }
+        };
+        fetchVimeoHLS();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [videoUrl, contentId, title, addToHistory]);
 
     const handleBackPress = () => {
         navigation.goBack();

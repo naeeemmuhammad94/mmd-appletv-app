@@ -31,8 +31,8 @@ export type AuthStackParamList = {
 export type StudentStackParamList = {
     Home: undefined;
     Search: undefined;
-    ProgramDetail: { programId: string };
-    VideoPlayer: { videoUrl: string; title?: string };
+    ProgramDetail: { id: string; type: 'program' | 'category' };
+    VideoPlayer: { videoUrl: string; title?: string; contentId?: string };
 };
 
 export type DojoStackParamList = {

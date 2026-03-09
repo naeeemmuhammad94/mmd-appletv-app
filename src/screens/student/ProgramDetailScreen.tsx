@@ -6,7 +6,8 @@ import {
     ScrollView,
     ImageBackground,
     TouchableOpacity,
-    Alert
+    Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -17,8 +18,7 @@ import { LessonCard } from '../../components/student/LessonCard';
 import BackIcon from '../../../assets/icons/back-icon.svg';
 import PlayButton from '../../../assets/icons/play_button.svg';
 import { useStudyStore } from '../../store/useStudyStore';
-import { StudyContentItem } from '../../types/study';
-import { ActivityIndicator } from 'react-native';
+import { StudyContentItem, StudySubCategory } from '../../types/study';
 
 type ProgramDetailRouteProp = RouteProp<StudentStackParamList, 'ProgramDetail'>;
 type ProgramDetailNavigationProp = NativeStackNavigationProp<StudentStackParamList, 'ProgramDetail'>;
@@ -27,24 +27,65 @@ const ProgramDetailScreen: React.FC = () => {
     const navigation = useNavigation<ProgramDetailNavigationProp>();
     const route = useRoute<ProgramDetailRouteProp>();
     const { theme } = useTheme();
-    const { programId } = route.params;
+    const { id, type } = route.params;
 
-    // We'll treat programId as categoryId
-    const { categories, fetchStudyContent, clearError } = useStudyStore();
+    const { categories, programs, fetchStudyContent, fetchSubCategories, subCategories, clearError } = useStudyStore();
     const [programContent, setProgramContent] = React.useState<StudyContentItem[]>([]);
     const [loading, setLoading] = React.useState(true);
 
-    const category = React.useMemo(() => categories.find(c => c._id === programId), [categories, programId]);
+    // Resolve display name from the relevant store list
+    const displayName = React.useMemo(() => {
+        if (type === 'category') {
+            const cat = categories.find(c => c._id === id);
+            return cat?.name || 'Category';
+        } else {
+            const prog = programs.find(p => p._id === id);
+            return prog?.name || 'Program';
+        }
+    }, [type, id, categories, programs]);
+
+    // Get the category image when type is 'category'
+    const categoryImage = React.useMemo(() => {
+        if (type === 'category') {
+            const cat = categories.find(c => c._id === id);
+            return cat?.image;
+        }
+        return undefined;
+    }, [type, id, categories]);
+
+    // Sub-categories for this category (only relevant when type === 'category')
+    const currentSubCategories: StudySubCategory[] = React.useMemo(() => {
+        if (type === 'category' && subCategories[id]) {
+            return Array.isArray(subCategories[id]) ? subCategories[id] : [];
+        }
+        return [];
+    }, [type, id, subCategories]);
 
     React.useEffect(() => {
         const loadContent = async () => {
             setLoading(true);
             try {
-                // Dojo app fetches by category
-                await fetchStudyContent({ categoryIds: [programId], limit: 100, page: 1 });
-                // Grab the fresh content
-                const { contentItems } = useStudyStore.getState();
+                if (type === 'category') {
+                    // Fetch content for this category + fetch its sub-categories
+                    await Promise.all([
+                        fetchStudyContent({ categoryIds: [id], limit: 500, page: 1, withoutPagination: true }),
+                        fetchSubCategories(id),
+                    ]);
+                } else {
+                    // Fetch content for this program
+                    await fetchStudyContent({ programIds: [id], limit: 500, page: 1 });
+                }
+                const { contentItems, subCategories: allSubCats } = useStudyStore.getState();
                 setProgramContent(contentItems);
+
+                // Debug logging
+                console.log('[ProgramDetail] type:', type, 'id:', id);
+                console.log('[ProgramDetail] contentItems loaded:', contentItems.length);
+                if (contentItems.length > 0) {
+                    console.log('[ProgramDetail] First item subCategoryId:', contentItems[0].subCategoryId);
+                    console.log('[ProgramDetail] First item programs:', JSON.stringify(contentItems[0].programs?.map(p => p.name)));
+                }
+                console.log('[ProgramDetail] subCategories for id:', JSON.stringify(allSubCats[id] || 'none'));
             } catch (err) {
                 console.error("Failed to load program content", err);
             } finally {
@@ -55,45 +96,92 @@ const ProgramDetailScreen: React.FC = () => {
         loadContent();
 
         return () => clearError();
-    }, [programId]);
+    }, [id, type]);
 
-    // Group items by tags to create dynamic tiers
-    const tiers = React.useMemo(() => {
-        const grouped: Record<string, StudyContentItem[]> = {};
-        const noTags: StudyContentItem[] = [];
+    // Group content into sections
+    const sections = React.useMemo(() => {
+        if (programContent.length === 0) return [];
 
-        programContent.forEach(item => {
-            if (item.tags && item.tags.length > 0) {
-                // tags is an array of StudyTag objects, so we need to access .name
-                const primaryTag = item.tags[0].name || 'Uncategorized';
-                if (!grouped[primaryTag]) {
-                    grouped[primaryTag] = [];
-                }
-                grouped[primaryTag].push(item);
-            } else {
-                noTags.push(item);
-            }
-        });
+        if (type === 'category' && currentSubCategories.length > 0) {
+            // Group by sub-category
+            const grouped: Record<string, { name: string; items: StudyContentItem[] }> = {};
+            const ungrouped: StudyContentItem[] = [];
 
-        const generatedTiers = Object.keys(grouped).map(tag => ({
-            name: tag,
-            description: `${grouped[tag].length} Lessons`,
-            lessons: grouped[tag],
-            locked: false,
-        }));
-
-        if (noTags.length > 0) {
-            generatedTiers.push({
-                name: 'Other Lessons',
-                description: `${noTags.length} Lessons`,
-                lessons: noTags,
-                locked: false,
+            // Pre-fill groups in order
+            currentSubCategories.forEach(sc => {
+                grouped[sc._id] = { name: sc.name, items: [] };
             });
-        }
 
-        // Sort tiers by name (Basic/Beginner usually sorts first alphabetically or by custom order if needed)
-        return generatedTiers.sort((a, b) => a.name.localeCompare(b.name));
-    }, [programContent]);
+            programContent.forEach(item => {
+                if (item.subCategoryId && grouped[item.subCategoryId]) {
+                    grouped[item.subCategoryId].items.push(item);
+                } else {
+                    ungrouped.push(item);
+                }
+            });
+
+            const result = currentSubCategories
+                .filter(sc => grouped[sc._id].items.length > 0)
+                .map(sc => ({
+                    name: grouped[sc._id].name,
+                    description: `${grouped[sc._id].items.length} Lessons`,
+                    lessons: grouped[sc._id].items,
+                    locked: false,
+                }));
+
+            // Append ungrouped items
+            if (ungrouped.length > 0) {
+                result.push({
+                    name: 'Other',
+                    description: `${ungrouped.length} Lessons`,
+                    lessons: ungrouped,
+                    locked: false,
+                });
+            }
+
+            return result;
+        } else if (type === 'program') {
+            // Group by category name
+            const grouped: Record<string, StudyContentItem[]> = {};
+
+            programContent.forEach(item => {
+                const key = item.category?.name || 'Uncategorized';
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(item);
+            });
+
+            const keys = Object.keys(grouped);
+            if (keys.length <= 1) {
+                // Only one category — try grouping by tags instead
+                const tagGrouped: Record<string, StudyContentItem[]> = {};
+                programContent.forEach(item => {
+                    const tagName = item.tags?.[0]?.name || 'Uncategorized';
+                    if (!tagGrouped[tagName]) tagGrouped[tagName] = [];
+                    tagGrouped[tagName].push(item);
+                });
+
+                return Object.keys(tagGrouped).sort().map(tag => ({
+                    name: tag,
+                    description: `${tagGrouped[tag].length} Lessons`,
+                    lessons: tagGrouped[tag],
+                    locked: false,
+                }));
+            }
+
+            return keys.sort().map(key => ({
+                name: key,
+                description: `${grouped[key].length} Lessons`,
+                lessons: grouped[key],
+                locked: false,
+            }));
+        } else {
+            // Category with no sub-categories — return empty to trigger flat grid
+            return [];
+        }
+    }, [programContent, type, currentSubCategories]);
+
+    // Use flat grid when type === 'category' and no sections could be formed
+    const useFlatGrid = type === 'category' && sections.length === 0 && programContent.length > 0;
 
     if (loading) {
         return (
@@ -103,30 +191,31 @@ const ProgramDetailScreen: React.FC = () => {
         );
     }
 
-    if (!category || programContent.length === 0) {
+    if (programContent.length === 0) {
         return (
             <View style={styles.container}>
-                <Text style={styles.errorText}>Program content not found</Text>
+                <Text style={styles.errorText}>No content found</Text>
             </View>
         );
     }
 
-    // Use the first item's image as hero, or fall back to category image
-    const heroImage = { uri: programContent[0]?.ranks?.[0]?.stripeImage || category.image || 'https://via.placeholder.com/1000' };
+    // Hero image: first item's stripe image, category image, or fallback
+    const heroImage = {
+        uri: programContent[0]?.ranks?.[0]?.stripeImage
+            || categoryImage
+            || 'https://via.placeholder.com/1000'
+    };
 
     const handlePlayPress = (item?: StudyContentItem) => {
-        // If a specific item is passed, play that
         const targetItem = item || programContent[0];
 
-        // Let's assume contentLink is a video if it's Vimeo or mp4/m3u8
-        // For docs like PDFs or other unsupported content, show an alert
         if (targetItem?.contentLink && (targetItem.contentLink.includes('vimeo') || targetItem.contentLink.includes('mp4') || targetItem.contentLink.includes('m3u8'))) {
             navigation.navigate('VideoPlayer', {
                 videoUrl: targetItem.contentLink,
                 title: targetItem.title,
+                contentId: targetItem._id,
             });
         } else {
-            // Handle PDF or other non-video content unsupported on TVOS
             Alert.alert(
                 "Unsupported Content",
                 "Documents and interactive WebViews are not natively supported on Apple TV. Please view this content on the mobile app or web portal.",
@@ -139,9 +228,8 @@ const ProgramDetailScreen: React.FC = () => {
         navigation.goBack();
     };
 
-    const renderTierSection = (tier: { name: string, description: string, lessons: StudyContentItem[], locked: boolean }, index: number) => (
+    const renderTierSection = (tier: { name: string; description: string; lessons: StudyContentItem[]; locked: boolean }, index: number) => (
         <View key={`${tier.name}-${index}`} style={styles.tierContainer}>
-            {/* Tier Header */}
             <View style={styles.tierHeader}>
                 <View>
                     <Text style={styles.tierTitle}>{tier.name}</Text>
@@ -149,7 +237,6 @@ const ProgramDetailScreen: React.FC = () => {
                 </View>
             </View>
 
-            {/* Lesson Cards Row */}
             <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -163,6 +250,27 @@ const ProgramDetailScreen: React.FC = () => {
                         locked={tier.locked}
                         lockMessage=""
                         onPress={tier.locked ? undefined : () => handlePlayPress(lesson)}
+                    />
+                ))}
+            </ScrollView>
+        </View>
+    );
+
+    const renderFlatGrid = () => (
+        <View style={styles.flatGridContainer}>
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.lessonRow}
+            >
+                {programContent.map((lesson) => (
+                    <LessonCard
+                        key={lesson._id}
+                        title={lesson.title}
+                        image={{ uri: lesson.ranks?.[0]?.stripeImage || 'https://via.placeholder.com/380x240' }}
+                        locked={false}
+                        lockMessage=""
+                        onPress={() => handlePlayPress(lesson)}
                     />
                 ))}
             </ScrollView>
@@ -184,7 +292,6 @@ const ProgramDetailScreen: React.FC = () => {
                         imageStyle={styles.heroImageStyle}
                         resizeMode="cover"
                     >
-                        {/* Dark overlay */}
                         <View style={styles.heroOverlay}>
                             {/* Back Button */}
                             <TouchableOpacity
@@ -207,16 +314,19 @@ const ProgramDetailScreen: React.FC = () => {
                                 <PlayButton width={rs(72)} height={rs(72)} />
                             </TouchableOpacity>
 
-                            {/* Category Title */}
+                            {/* Title */}
                             <Text style={styles.categoryLabel}>
-                                {category.name}
+                                {displayName}
                             </Text>
                         </View>
                     </ImageBackground>
                 </View>
 
-                {/* Tier Sections */}
-                {tiers.map((tier, index) => renderTierSection(tier, index))}
+                {/* Content Sections */}
+                {useFlatGrid
+                    ? renderFlatGrid()
+                    : sections.map((tier, index) => renderTierSection(tier, index))
+                }
 
                 {/* Bottom spacing */}
                 <View style={{ height: rs(60) }} />
@@ -248,6 +358,7 @@ const styles = StyleSheet.create({
         borderRadius: 0,
         overflow: 'hidden',
         height: rs(480),
+        marginBottom: rs(40),
     },
     heroImage: {
         flex: 1,
@@ -307,6 +418,11 @@ const styles = StyleSheet.create({
     },
     lessonRow: {
         paddingRight: rs(40),
+    },
+    // Flat grid fallback
+    flatGridContainer: {
+        marginTop: rs(20),
+        paddingHorizontal: rs(60),
     },
 });
 
