@@ -1,0 +1,56 @@
+
+> com.mmd.appletvapp@0.0.1 start
+> react-native start --reset-cache
+
+
+Welcome to React Native v0.83
+Starting dev server on http://localhost:8081
+
+
+                        ▒▒▓▓▓▓▒▒
+                     ▒▓▓▓▒▒░░▒▒▓▓▓▒
+                  ▒▓▓▓▓░░░▒▒▒▒░░░▓▓▓▓▒
+                 ▓▓▒▒▒▓▓▓▓▓▓▓▓▓▓▓▓▒▒▒▓▓
+                 ▓▓░░░░░▒▓▓▓▓▓▓▒░░░░░▓▓
+                 ▓▓░░▓▓▒░░░▒▒░░░▒▓▒░░▓▓
+                 ▓▓░░▓▓▓▓▓▒▒▒▒▓▓▓▓▒░░▓▓
+                 ▓▓░░▓▓▓▓▓▓▓▓▓▓▓▓▓▒░░▓▓
+                 ▓▓▒░░▒▒▓▓▓▓▓▓▓▓▒░░░▒▓▓
+                  ▒▓▓▓▒░░░▒▓▓▒░░░▒▓▓▓▒
+                     ▒▓▓▓▒░░░░▒▓▓▓▒
+                        ▒▒▓▓▓▓▒▒
+
+
+ WARN  the transform cache was reset.
+                Welcome to Metro v0.83.3
+              Fast - Scalable - Integrated
+
+
+ INFO  Dev server ready. Press Ctrl+C to exit.
+ INFO  Interactive mode is not supported in this environment
+ BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 0.0% (0/1)
+ BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 1.0% (1/1)
+ BUNDLE  ./index.js ░░░░░░░░░░░░░░░░ 4.0% (2/5)
+ BUNDLE  ./index.js ▓▓░░░░░░░░░░░░░░ 16.0% (5/14)
+ BUNDLE  ./index.js ▓▓▓░░░░░░░░░░░░░ 19.1% (14/112)
+ BUNDLE  ./index.js ▓▓▓░░░░░░░░░░░░░ 19.1% (33/156)
+ BUNDLE  ./index.js ▓▓▓░░░░░░░░░░░░░ 19.1% (78/241)
+ BUNDLE  ./index.js ▓▓▓▓▓░░░░░░░░░░░ 35.6% (188/315)
+ BUNDLE  ./index.js ▓▓▓▓▓▓░░░░░░░░░░ 37.7% (288/485)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓░░░░░░░░░ 46.3% (347/510)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓░░░░░░░░ 51.6% (415/578)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 66.5% (526/681)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 66.5% (585/754)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 66.5% (616/1027)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 66.5% (678/1063)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 66.5% (728/1151)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓░░░░░░ 66.5% (875/1173)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 78.0% (1056/1196)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 78.7% (1139/1354)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓▓▓░░░░ 80.6% (1262/1406)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░ 93.5% (1380/1427)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 97.4% (1509/1532)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (1539/1540)
+ BUNDLE  ./index.js ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░ 99.9% (1540/1540)
+ BUNDLE  ./index.js 
+ INFO  [1m[7m💡 JavaScript logs have moved![22m They can now be viewed in React Native DevTools. Tip: Type [1mj[22m in the terminal to open.[27m

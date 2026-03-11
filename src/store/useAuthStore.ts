@@ -8,169 +8,183 @@ import { authService } from '../services/authService';
 import type { CurrentUser, AuthState } from '../types/auth';
 
 interface AuthActions {
-    login: (userName: string, password: string) => Promise<void>;
-    logout: () => Promise<void>;
-    loadStoredAuth: () => Promise<void>;
-    reset: () => void;
-    clearError: () => void;
-    setRole: (role: 'student' | 'dojo' | 'admin') => Promise<void>;
+  login: (userName: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  loadStoredAuth: () => Promise<void>;
+  reset: () => void;
+  clearError: () => void;
+  setRole: (role: 'student' | 'dojo' | 'admin') => Promise<void>;
 }
 
 type AuthStore = AuthState & AuthActions;
 
 const initialState: AuthState = {
-    user: null,
-    token: null,
-    isAuthenticated: false,
-    isLoading: false,
-    isInitialized: false,
-    apiError: null,
-    selectedRole: undefined, // Add selectedRole to state
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  isLoading: false,
+  isInitialized: false,
+  apiError: null,
+  selectedRole: undefined, // Add selectedRole to state
 };
 
-export const useAuthStore = create<AuthStore>((set, get) => ({
-    ...initialState,
+export const useAuthStore = create<AuthStore>(set => ({
+  ...initialState,
 
-    setRole: async (role: 'student' | 'dojo' | 'admin') => {
-        await secureStorage.setSelectedRole(role);
-        set({ selectedRole: role });
-    },
-
-    /**
-     * Login with userName and password
-     */
-    login: async (userName: string, password: string) => {
-        set({ isLoading: true, apiError: null });
-        try {
-            const response = await authService.loginUser({
-                userName,
-                password,
-                rememberMe: true,
-                rememberMeDays: 365,
-            });
-
-            // Check if we have a valid response with data
-            if (response && response.data) {
-                // Handle potentially different token structures (matching kiosk logic)
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const responseAny = response as any;
-                const token = response.data.accessToken || responseAny.data?.token || responseAny.token;
-                const refreshToken = response.data.refreshToken;
-                const userData = response.data;
-
-                // Store tokens securely
-                // The API may return token with 'Bearer ' prefix (as dojo-app handles).
-                // Strip it before storing so the axios interceptor can add it cleanly.
-                if (token && typeof token === 'string') {
-                    const cleanToken = token.startsWith('Bearer ') ? token.replace('Bearer ', '') : token;
-                    await secureStorage.setToken(cleanToken);
-                    // Update local reference for the set() call below
-                    set({
-                        user: { ...userData, accessToken: cleanToken } as any,
-                        token: cleanToken,
-                        isAuthenticated: true,
-                        isLoading: false,
-                        apiError: null,
-                    });
-                } else {
-                    throw new Error('No valid token received from login response');
-                }
-                if (refreshToken && typeof refreshToken === 'string') {
-                    await secureStorage.setRefreshToken(refreshToken);
-                }
-
-                // Store minimal user data
-                const userInfo = userData.user || userData;
-                const essentialUserData = {
-                    _id: (userInfo as any)._id || '',
-                    email: (userInfo as any).email || '',
-                    firstName: (userInfo as any).firstName || '',
-                };
-                await secureStorage.setUserData(JSON.stringify(essentialUserData));
-            } else {
-                const errorMessage = response?.message || 'Login failed - no data received';
-                throw new Error(errorMessage);
-            }
-        } catch (error: any) {
-            set({
-                isLoading: false,
-                apiError: error.message || 'Login failed. Please check your connection and credentials.'
-            });
-            // Re-throw to allow component to handle if needed
-            throw error;
-        }
-    },
-
-    /**
-     * Logout user and clear all stored data
-     */
-    logout: async () => {
-        set({ isLoading: true });
-        try {
-            // API call (fire and forget)
-            authService.logoutUser().catch(() => { });
-
-            // Clear local storage
-            await secureStorage.clearAll().catch(e => console.error('Clear storage failed', e));
-        } catch (e) {
-            console.error('Logout error', e);
-        } finally {
-            set({
-                ...initialState,
-                // Explicitly reset critical flags
-                user: null,
-                token: null,
-                isAuthenticated: false,
-                selectedRole: undefined,
-                isInitialized: true,
-                isLoading: false,
-            });
-        }
-    },
-
-    /**
-     * Load authentication state from secure storage
-     */
-    loadStoredAuth: async () => {
-        try {
-            set({ isLoading: true });
-            const [token, userData, role] = await Promise.all([
-                secureStorage.getToken(),
-                secureStorage.getUserData(),
-                secureStorage.getSelectedRole(),
-            ]);
-
-            if (token && userData) {
-                const parsedUser = JSON.parse(userData) as CurrentUser;
-                set({
-                    user: { ...parsedUser, accessToken: token },
-                    token,
-                    isAuthenticated: true,
-                    isInitialized: true,
-                    isLoading: false,
-                    selectedRole: (role as 'student' | 'dojo' | 'admin') || undefined,
-                });
-
-                // Optionally verify token validity here with getCurrentUser()
-            } else {
-                set({ isInitialized: true, isLoading: false });
-            }
-        } catch (error) {
-            console.error('Error loading stored auth:', error);
-            set({ isInitialized: true, isLoading: false });
-        }
-    },
-
-    /**
-     * Reset store to initial state
-     */
-    reset: () => {
-        set({ ...initialState, isInitialized: true });
-    },
-
-    clearError: () => {
-        set({ apiError: null });
+  setRole: async (role: 'student' | 'dojo' | 'admin') => {
+    try {
+      await secureStorage.setSelectedRole(role);
+    } catch (error) {
+      console.warn('AsyncStorage error while setting role:', error);
     }
+    set({ selectedRole: role });
+  },
+
+  /**
+   * Login with userName and password
+   */
+  login: async (userName: string, password: string) => {
+    set({ isLoading: true, apiError: null });
+    try {
+      const response = await authService.loginUser({
+        userName,
+        password,
+        rememberMe: true,
+        rememberMeDays: 365,
+      });
+
+      // Check if we have a valid response with data
+      if (response && response.data) {
+        // Handle potentially different token structures (matching kiosk logic)
+
+        const responseAny = response as any;
+        const token =
+          response.data.accessToken ||
+          responseAny.data?.token ||
+          responseAny.token;
+        const refreshToken = response.data.refreshToken;
+        const userData = response.data;
+
+        // Store tokens securely
+        // The API may return token with 'Bearer ' prefix (as dojo-app handles).
+        // Strip it before storing so the axios interceptor can add it cleanly.
+        if (token && typeof token === 'string') {
+          const cleanToken = token.startsWith('Bearer ')
+            ? token.replace('Bearer ', '')
+            : token;
+          await secureStorage.setToken(cleanToken);
+          // Update local reference for the set() call below
+          set({
+            user: { ...userData, accessToken: cleanToken } as any,
+            token: cleanToken,
+            isAuthenticated: true,
+            isLoading: false,
+            apiError: null,
+          });
+        } else {
+          throw new Error('No valid token received from login response');
+        }
+        if (refreshToken && typeof refreshToken === 'string') {
+          await secureStorage.setRefreshToken(refreshToken);
+        }
+
+        // Store minimal user data
+        const userInfo = userData.user || userData;
+        const essentialUserData = {
+          _id: (userInfo as any)._id || '',
+          email: (userInfo as any).email || '',
+          firstName: (userInfo as any).firstName || '',
+        };
+        await secureStorage.setUserData(JSON.stringify(essentialUserData));
+      } else {
+        const errorMessage =
+          response?.message || 'Login failed - no data received';
+        throw new Error(errorMessage);
+      }
+    } catch (error: any) {
+      set({
+        isLoading: false,
+        apiError:
+          error.message ||
+          'Login failed. Please check your connection and credentials.',
+      });
+      // Re-throw to allow component to handle if needed
+      throw error;
+    }
+  },
+
+  /**
+   * Logout user and clear all stored data
+   */
+  logout: async () => {
+    set({ isLoading: true });
+    try {
+      // API call (fire and forget)
+      authService.logoutUser().catch(() => {});
+
+      // Clear local storage
+      await secureStorage
+        .clearAll()
+        .catch(e => console.error('Clear storage failed', e));
+    } catch (e) {
+      console.error('Logout error', e);
+    } finally {
+      set({
+        ...initialState,
+        // Explicitly reset critical flags
+        user: null,
+        token: null,
+        isAuthenticated: false,
+        selectedRole: undefined,
+        isInitialized: true,
+        isLoading: false,
+      });
+    }
+  },
+
+  /**
+   * Load authentication state from secure storage
+   */
+  loadStoredAuth: async () => {
+    try {
+      set({ isLoading: true });
+      const [token, userData, role] = await Promise.all([
+        secureStorage.getToken(),
+        secureStorage.getUserData(),
+        secureStorage.getSelectedRole(),
+      ]);
+
+      if (token && userData) {
+        const parsedUser = JSON.parse(userData) as CurrentUser;
+        set({
+          user: { ...parsedUser, accessToken: token },
+          token,
+          isAuthenticated: true,
+          isInitialized: true,
+          isLoading: false,
+          selectedRole: (role as 'student' | 'dojo' | 'admin') || undefined,
+        });
+
+        // Optionally verify token validity here with getCurrentUser()
+      } else {
+        set({ isInitialized: true, isLoading: false });
+      }
+    } catch (error) {
+      console.error('Error loading stored auth:', error);
+      set({ isInitialized: true, isLoading: false });
+    }
+  },
+
+  /**
+   * Reset store to initial state
+   */
+  reset: () => {
+    set({ ...initialState, isInitialized: true });
+  },
+
+  clearError: () => {
+    set({ apiError: null });
+  },
 }));
 
 export default useAuthStore;

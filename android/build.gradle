@@ -9,12 +9,22 @@ buildscript {
     }
     repositories {
         google()
-        mavenCentral()
+        maven { url 'https://repo1.maven.org/maven2/' }
     }
     dependencies {
         classpath("com.android.tools.build:gradle")
         classpath("com.facebook.react:react-native-gradle-plugin")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        maven { url 'https://repo1.maven.org/maven2/' }
+        maven {
+            url "$rootDir/../node_modules/@react-native-async-storage/async-storage/android/local_repo"
+        }
     }
 }
 

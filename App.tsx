@@ -7,7 +7,9 @@ import { ThemeContext, darkTheme } from './src/theme';
 import { RootNavigator } from './src/navigation';
 import { LogBox } from 'react-native';
 
-LogBox.ignoreAllLogs(true);
+if (!__DEV__) {
+  LogBox.ignoreAllLogs(true);
+}
 
 export default function App() {
   return (
