@@ -73,3 +73,7 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+android/app/proguard-rules.pro
+android/app/mmd-release.jks
+upload_certificate.pem
+ios/MmdAppleTvApp.xcodeproj/project.pbxproj
