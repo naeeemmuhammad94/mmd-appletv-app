@@ -76,4 +76,3 @@ yarn-error.log
 android/app/proguard-rules.pro
 android/app/mmd-release.jks
 upload_certificate.pem
-ios/MmdAppleTvApp.xcodeproj/project.pbxproj
