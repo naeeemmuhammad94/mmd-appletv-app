@@ -9,7 +9,7 @@ import type {
 
 interface StudyState {
   categories: StudyCategory[];
-  programs: StudyProgram[]; // From /program-tag-club
+  programs: StudyProgram[]; // Extracted from contentItems
   trainingAreas: StudyCategory[]; // From /study-category
   subCategories: Record<string, StudySubCategory[]>;
   contentItems: StudyContentItem[];
@@ -51,6 +51,32 @@ const initialState: StudyState = {
   error: null,
 };
 
+const extractProgramsAndCategories = (items: StudyContentItem[]) => {
+  const uniqueCategories: StudyCategory[] = [];
+  const seenCategoryIds = new Set<string>();
+  const uniquePrograms: StudyProgram[] = [];
+  const seenProgramIds = new Set<string>();
+
+  items.forEach(item => {
+    // Categories (extracting logic from dojo-app)
+    if (item.category && !seenCategoryIds.has(item.category._id)) {
+      uniqueCategories.push(item.category);
+      seenCategoryIds.add(item.category._id);
+    }
+    // Programs (exact dojo-app loop structure)
+    if (item.programs && Array.isArray(item.programs)) {
+      item.programs.forEach(program => {
+        if (program && !seenProgramIds.has(program._id)) {
+          uniquePrograms.push(program);
+          seenProgramIds.add(program._id);
+        }
+      });
+    }
+  });
+
+  return { uniqueCategories, uniquePrograms };
+};
+
 export const useStudyStore = create<StudyStore>((set, get) => ({
   ...initialState,
 
@@ -69,138 +95,76 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
           ? response.data
           : response.data.items || [];
 
-        // Extract unique categories (same as dojo-app "Select a category")
-        const uniqueCategories: StudyCategory[] = [];
-        const seenCategoryIds = new Set<string>();
+        const { uniqueCategories, uniquePrograms } =
+          extractProgramsAndCategories(items);
 
-        // Extract unique programs (same as dojo-app "Select a program")
-        const uniquePrograms: StudyProgram[] = [];
-        const seenProgramIds = new Set<string>();
+        // Log findings to match dojo-app visibility
+        console.log('[StudyStore] Programs found:', uniquePrograms.length);
+        console.log('[StudyStore] Categories found:', uniqueCategories.length);
 
-        items.forEach(item => {
-          // Categories
-          if (item.category && !seenCategoryIds.has(item.category._id)) {
-            uniqueCategories.push(item.category);
-            seenCategoryIds.add(item.category._id);
-          }
-          // Programs
-          if (item.programs && Array.isArray(item.programs)) {
-            item.programs.forEach(program => {
-              if (program && !seenProgramIds.has(program._id)) {
-                uniquePrograms.push(program);
-                seenProgramIds.add(program._id);
-              }
-            });
-          }
-        });
-
-        // Log first item's subCategoryId to verify field exists
-        if (items.length > 0) {
-          console.log(
-            '[StudyStore] First item subCategoryId:',
-            items[0].subCategoryId,
-          );
-          console.log('[StudyStore] Programs found:', uniquePrograms.length);
-          console.log(
-            '[StudyStore] Categories found:',
-            uniqueCategories.length,
-          );
-        }
-
-        set(state => ({
+        set({
           categories: uniqueCategories,
-          // Fix race condition: don't overwrite programs if fetchPrograms already populated them
-          programs: state.programs.length > 0 ? state.programs : uniquePrograms,
+          programs: uniquePrograms,
           contentItems: items,
           loadingCategories: false,
-        }));
+        });
       } else {
         throw new Error(response.message || 'Failed to fetch study data');
       }
-    } catch (error: any) {
-      console.error(
-        '[StudyStore] fetchCategories FAILED:',
-        error.message || error,
-      );
+    } catch (error: unknown) {
+      const msg =
+        error instanceof Error
+          ? error.message
+          : 'Error fetching study categories';
+      console.error('[StudyStore] fetchCategories FAILED:', msg);
       set({
         loadingCategories: false,
-        error: error.message || 'Error fetching study categories',
+        error: msg,
       });
     }
   },
 
   fetchPrograms: async () => {
-    // Programs are primary fetched from the dedicated /program-tag-club endpoint.
-    // If that fails or is empty, we fall back to extracting from content items.
-    const { programs } = get();
+    const { programs, contentItems } = get();
     if (programs.length > 0) return; // Already loaded
 
     set({ loadingPrograms: true });
-    try {
-      // Priority 1: Use the dedicated /program-tag-club endpoint
-      const response = await studyService.getPrograms();
 
-      // Debug the raw response structure in case the API type is wrong
-      console.log(
-        '[StudyStore] /program-tag-club raw response data keys:',
-        response.data ? Object.keys(response.data) : 'null',
-      );
+    try {
+      // If contentItems already loaded, just extract from them
+      if (contentItems.length > 0) {
+        const { uniquePrograms } = extractProgramsAndCategories(contentItems);
+        console.log(
+          '[StudyStore] Programs extracted from contentItems:',
+          uniquePrograms.length,
+        );
+        set({ programs: uniquePrograms, loadingPrograms: false });
+        return;
+      }
+
+      // Replicate dojo-app behavior: fetch directly from study content endpoint
+      const response = await studyService.getStudyContentForContact({
+        limit: 500,
+        page: 1,
+        pagination: true,
+      });
 
       if (response.success && response.data) {
-        // Handle different possible API shapes (Object with .programs OR direct Array)
-        const apiPrograms = Array.isArray(response.data)
+        const items: StudyContentItem[] = Array.isArray(response.data)
           ? response.data
-          : response.data.programs
-          ? response.data.programs
-          : (response.data as any).items || [];
+          : response.data.items || [];
 
-        if (apiPrograms.length > 0) {
-          console.log(
-            '[StudyStore] Programs loaded from dedicated API:',
-            apiPrograms.length,
-          );
-          set({ programs: apiPrograms, loadingPrograms: false });
-          return;
-        } else {
-          console.log(
-            '[StudyStore] /program-tag-club returned empty array/data.',
-          );
-        }
-      }
-    } catch (error: any) {
-      console.warn(
-        '[StudyStore] getPrograms API failed:',
-        error.message || error,
-      );
-      if (error.response) {
-        console.warn(
-          '[StudyStore] API Fallback Status:',
-          error.response.status,
-          error.response.data,
+        const { uniquePrograms } = extractProgramsAndCategories(items);
+        console.log(
+          '[StudyStore] Programs fetched and extracted independently:',
+          uniquePrograms.length,
         );
+        set({ programs: uniquePrograms, loadingPrograms: false });
+      } else {
+        set({ loadingPrograms: false });
       }
-    }
-
-    // Priority 2: Fallback - Extract from content items
-    const currentContent = get().contentItems;
-    if (currentContent.length > 0) {
-      const uniquePrograms: StudyProgram[] = [];
-      const seenProgramIds = new Set<string>();
-      currentContent.forEach(item => {
-        item.programs?.forEach(program => {
-          if (program && !seenProgramIds.has(program._id)) {
-            uniquePrograms.push(program);
-            seenProgramIds.add(program._id);
-          }
-        });
-      });
-      console.log(
-        '[StudyStore] Programs extracted from content items fallback:',
-        uniquePrograms.length,
-      );
-      set({ programs: uniquePrograms, loadingPrograms: false });
-    } else {
-      console.log('[StudyStore] Fallback aborted: contentItems is empty.');
+    } catch (error) {
+      console.error('[StudyStore] fetchPrograms failed:', error);
       set({ loadingPrograms: false });
     }
   },
@@ -225,11 +189,12 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
         );
         set({ loadingTrainingAreas: false });
       }
-    } catch (error: any) {
-      console.error(
-        '[StudyStore] fetchTrainingAreas FAILED:',
-        error.message || error,
-      );
+    } catch (error: unknown) {
+      const msg =
+        error instanceof Error
+          ? error.message
+          : 'Error fetching training areas';
+      console.error('[StudyStore] fetchTrainingAreas FAILED:', msg);
       set({ loadingTrainingAreas: false });
     }
   },
@@ -258,7 +223,8 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
       // Dojo app logic:
       // ALWAYS pass limit=500, page=1, pagination=true for both category and program filters
 
-      let queryParams: any = { ...filters };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let queryParams: Record<string, any> = { ...filters };
 
       if (filters.categoryIds && filters.categoryIds.length > 0) {
         queryParams.limit = 500;
@@ -285,10 +251,12 @@ export const useStudyStore = create<StudyStore>((set, get) => ({
       } else {
         throw new Error(response.message || 'Failed to fetch content');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const msg =
+        error instanceof Error ? error.message : 'Error fetching study content';
       set({
         loadingContent: false,
-        error: error.message || 'Error fetching study content',
+        error: msg,
       });
     }
   },

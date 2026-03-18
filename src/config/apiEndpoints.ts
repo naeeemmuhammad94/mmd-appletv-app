@@ -4,25 +4,22 @@
  */
 
 export enum ApiEndpoints {
-    // Auth endpoints
-    Login = '/user/login',
-    Logout = '/user/logout',
-    CurrentUser = '/user/current-user',
-    SendEmailToResetPassword = '/user/send-email-to-reset-password',
+  // Auth endpoints
+  Login = '/user/login',
+  Logout = '/user/logout',
+  CurrentUser = '/user/current-user',
+  SendEmailToResetPassword = '/user/send-email-to-reset-password',
 
-    // Curriculum endpoints
-    GetPrograms = '/program-tag-club',
+  // Study Content
+  StudyContent = '/study-content/',
+  StudyContentForContact = '/study-content/getStudyForContact',
 
-    // Study Content
-    StudyContent = '/study-content/',
-    StudyContentForContact = '/study-content/getStudyForContact',
+  // Study Categories & Sub-Categories
+  StudyCategory = '/study-category',
+  StudyCategoryById = '/study-category/',
+  SubCategoryByCategoryId = '/study-category/sub-category-by-category-id/',
+  GetAllSubCategories = '/study-category/get-all-sub-category',
 
-    // Study Categories & Sub-Categories
-    StudyCategory = '/study-category',
-    StudyCategoryById = '/study-category/',
-    SubCategoryByCategoryId = '/study-category/sub-category-by-category-id/',
-    GetAllSubCategories = '/study-category/get-all-sub-category',
-
-    // Notice Board (Announcements)
-    NoticeBoardForContact = '/notice-board/getNoticeBoardForContact',
+  // Notice Board (Announcements)
+  NoticeBoardForContact = '/notice-board/getNoticeBoardForContact',
 }
