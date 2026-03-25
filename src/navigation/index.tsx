@@ -21,6 +21,7 @@ import DojoCastConnectScreen from '../screens/dojo/DojoCastConnectScreen';
 import DojoCastSetupScreen from '../screens/dojo/DojoCastSetupScreen';
 import DojoCastSlideshowScreen from '../screens/dojo/DojoCastSlideshowScreen';
 import DojoCastErrorScreen from '../screens/dojo/DojoCastErrorScreen';
+import DojoCastSettingsScreen from '../screens/dojo/DojoCastSettingsScreen';
 
 // Admin Screens
 import AdminHomeScreen from '../screens/admin/AdminHomeScreen';
@@ -44,6 +45,7 @@ export type DojoStackParamList = {
   Setup: undefined;
   Slideshow: undefined;
   Error: undefined;
+  Settings: undefined;
 };
 
 export type AdminStackParamList = {
@@ -110,6 +112,7 @@ const DojoNavigator = () => {
       <DojoStack.Screen name="Setup" component={DojoCastSetupScreen} />
       <DojoStack.Screen name="Slideshow" component={DojoCastSlideshowScreen} />
       <DojoStack.Screen name="Error" component={DojoCastErrorScreen} />
+      <DojoStack.Screen name="Settings" component={DojoCastSettingsScreen} />
     </DojoStack.Navigator>
   );
 };

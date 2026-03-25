@@ -15,11 +15,9 @@ import { useDojoCastStore } from '../../store/useDojoCastStore';
 import { DUMMY_SLIDES } from '../../data/dojoCastData';
 import { DojoStackParamList } from '../../navigation';
 import Logo from '../../../assets/icons/logo.svg';
+import { useDojoSettingsStore } from '../../store/useDojoSettingsStore';
 
 type Nav = NativeStackNavigationProp<DojoStackParamList, 'Slideshow'>;
-
-/** Auto-advance interval in ms */
-const SLIDE_INTERVAL = 8000;
 
 const DojoCastSlideshowScreen = () => {
   const navigation = useNavigation<Nav>();
@@ -31,6 +29,8 @@ const DojoCastSlideshowScreen = () => {
     prevSlide,
     setConnectionStatus,
   } = useDojoCastStore();
+
+  const { autoAdvance, slideDuration, rotation } = useDojoSettingsStore();
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -69,10 +69,10 @@ const DojoCastSlideshowScreen = () => {
 
   // Auto-advance slides
   useEffect(() => {
-    if (isPlaying) {
+    if (isPlaying && autoAdvance) {
       timerRef.current = setInterval(() => {
         animateTransition(() => nextSlide(slides.length));
-      }, SLIDE_INTERVAL);
+      }, slideDuration * 1000);
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -82,7 +82,14 @@ const DojoCastSlideshowScreen = () => {
         clearInterval(timerRef.current);
       }
     };
-  }, [isPlaying, nextSlide, slides.length, animateTransition]);
+  }, [
+    isPlaying,
+    autoAdvance,
+    slideDuration,
+    nextSlide,
+    slides.length,
+    animateTransition,
+  ]);
 
   const handlePlayPause = () => {
     setPlaying(!isPlaying);
@@ -110,7 +117,12 @@ const DojoCastSlideshowScreen = () => {
   return (
     <View style={styles.container}>
       {/* Slide content */}
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}>
+      <Animated.View
+        style={[
+          StyleSheet.absoluteFill,
+          { opacity: fadeAnim, transform: [{ rotate: `${rotation}deg` }] },
+        ]}
+      >
         <ImageBackground
           source={{ uri: currentSlide.imageUrl }}
           style={StyleSheet.absoluteFill}

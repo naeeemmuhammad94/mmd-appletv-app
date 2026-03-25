@@ -39,7 +39,7 @@ const DojoCastSetupScreen = () => {
   };
 
   const handleSettings = () => {
-    // Future: navigate to settings
+    navigation.navigate('Settings');
   };
 
   return (
