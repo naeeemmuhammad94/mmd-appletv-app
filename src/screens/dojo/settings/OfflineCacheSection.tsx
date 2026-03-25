@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Switch, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { rs } from '../../../theme/responsive';
 import { FocusableCard } from '../../../components/ui/FocusableCard';
 import { useDojoSettingsStore } from '../../../store/useDojoSettingsStore';
@@ -17,21 +17,40 @@ const OfflineCacheSection = () => {
       <Text style={styles.title}>Offline & Cache</Text>
 
       {/* Offline toggle card */}
-      <View style={styles.card}>
-        <View style={styles.toggleRow}>
-          <Text style={styles.cardLabel}>Offline Version</Text>
-          <Switch
-            value={offlineMode}
-            onValueChange={toggleOfflineMode}
-            trackColor={{ true: '#4A90E2', false: '#374151' }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
-        <Text style={styles.cacheTitle}>Cache slideshow for offline use</Text>
-        <Text style={styles.cacheSubtitle}>
-          Slides will continue to play even without an internet connection
-        </Text>
-      </View>
+      <FocusableCard
+        onPress={toggleOfflineMode}
+        style={styles.card}
+        focusedStyle={styles.cardFocused}
+        wrapperStyle={styles.cardWrapperStyle}
+        scaleOnFocus={false}
+      >
+        {() => (
+          <View>
+            <View style={styles.toggleRow}>
+              <Text style={styles.cardLabel}>Offline Version</Text>
+              <View
+                style={[
+                  styles.toggle,
+                  offlineMode ? styles.toggleOn : styles.toggleOff,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.toggleThumb,
+                    offlineMode ? styles.toggleThumbOn : styles.toggleThumbOff,
+                  ]}
+                />
+              </View>
+            </View>
+            <Text style={styles.cacheTitle}>
+              Cache slideshow for offline use
+            </Text>
+            <Text style={styles.cacheSubtitle}>
+              Slides will continue to play even without an internet connection
+            </Text>
+          </View>
+        )}
+      </FocusableCard>
 
       {/* Storage indicator */}
       <Text style={styles.storageHeading}>
@@ -47,6 +66,7 @@ const OfflineCacheSection = () => {
         onPress={clearCache}
         style={styles.clearButton}
         focusedStyle={styles.clearButtonFocused}
+        wrapperStyle={styles.clearButtonWrapper}
         scaleOnFocus={false}
       >
         {() => <Text style={styles.clearButtonText}>Clear cached slides</Text>}
@@ -75,6 +95,13 @@ const styles = StyleSheet.create({
     padding: rs(28),
     marginBottom: rs(36),
   },
+  cardFocused: {
+    borderWidth: 2,
+    borderColor: '#4A90E2',
+  },
+  cardWrapperStyle: {
+    flex: 0,
+  },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -84,6 +111,31 @@ const styles = StyleSheet.create({
   cardLabel: {
     fontSize: rs(28),
     color: '#FFFFFF',
+  },
+  toggle: {
+    width: rs(60),
+    height: rs(34),
+    borderRadius: rs(17),
+    justifyContent: 'center',
+    paddingHorizontal: rs(4),
+  },
+  toggleOn: {
+    backgroundColor: '#4A90E2',
+  },
+  toggleOff: {
+    backgroundColor: '#374151',
+  },
+  toggleThumb: {
+    width: rs(26),
+    height: rs(26),
+    borderRadius: rs(13),
+    backgroundColor: '#FFFFFF',
+  },
+  toggleThumbOn: {
+    alignSelf: 'flex-end',
+  },
+  toggleThumbOff: {
+    alignSelf: 'flex-start',
   },
   cacheTitle: {
     fontSize: rs(26),
@@ -111,6 +163,11 @@ const styles = StyleSheet.create({
   progressFill: {
     backgroundColor: '#4A90E2',
     borderRadius: rs(5),
+  },
+  clearButtonWrapper: {
+    flex: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   clearButton: {
     borderWidth: 1.5,

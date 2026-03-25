@@ -39,6 +39,7 @@ const RotationSection = () => {
               rotation === btn.value && styles.rotateButtonActive,
             ]}
             focusedStyle={styles.rotateButtonFocused}
+            wrapperStyle={styles.buttonWrapper}
             scaleOnFocus={false}
           >
             {() => <Text style={styles.rotateButtonText}>{btn.label}</Text>}
@@ -85,6 +86,11 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: rs(16),
     marginBottom: rs(24),
+  },
+  buttonWrapper: {
+    flex: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rotateButton: {
     width: '47%',

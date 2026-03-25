@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, ImageBackground } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+// Use Unicode arrow instead of vector-icons for reliability on tvOS
 import { rs } from '../../theme/responsive';
 import { FocusableCard } from '../../components/ui/FocusableCard';
 import { DojoStackParamList } from '../../navigation';
@@ -46,9 +46,10 @@ const DojoCastSettingsScreen = () => {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
           focusedStyle={styles.backButtonFocused}
+          wrapperStyle={styles.tabWrapper}
           scaleOnFocus={false}
         >
-          {() => <Icon name="arrow-back" size={rs(32)} color="#FFFFFF" />}
+          {() => <Text style={styles.backButtonIcon}>{'\u2190'}</Text>}
         </FocusableCard>
       </View>
       <View style={styles.headerDivider} />
@@ -66,6 +67,7 @@ const DojoCastSettingsScreen = () => {
                 activeTab === tab && styles.tabButtonActive,
               ]}
               focusedStyle={styles.tabButtonFocused}
+              wrapperStyle={styles.tabWrapper}
               scaleOnFocus={false}
             >
               {() => (
@@ -126,6 +128,10 @@ const styles = StyleSheet.create({
   backButtonFocused: {
     backgroundColor: '#4A90E2',
   },
+  backButtonIcon: {
+    fontSize: rs(32),
+    color: '#FFFFFF',
+  },
   headerDivider: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.1)',
@@ -139,8 +145,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     paddingVertical: rs(48),
     paddingHorizontal: rs(32),
+    justifyContent: 'flex-start',
+    gap: rs(16),
+  },
+  tabWrapper: {
+    flex: 0,
+    alignItems: 'center',
     justifyContent: 'center',
-    gap: rs(8),
   },
   tabButton: {
     paddingVertical: rs(22),
@@ -170,7 +181,7 @@ const styles = StyleSheet.create({
   },
   contentOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.65)',
+    backgroundColor: 'rgba(0,0,0,0.85)',
   },
   contentInner: {
     flex: 1,

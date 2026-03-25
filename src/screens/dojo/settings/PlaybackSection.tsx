@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Switch, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { rs } from '../../../theme/responsive';
 import { FocusableCard } from '../../../components/ui/FocusableCard';
 import { useDojoSettingsStore } from '../../../store/useDojoSettingsStore';
@@ -15,15 +15,32 @@ const PlaybackSection = () => {
       <Text style={styles.title}>Playback</Text>
 
       {/* Auto-advance toggle */}
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Auto-advance slides</Text>
-        <Switch
-          value={autoAdvance}
-          onValueChange={toggleAutoAdvance}
-          trackColor={{ true: '#4A90E2', false: '#374151' }}
-          thumbColor="#FFFFFF"
-        />
-      </View>
+      <FocusableCard
+        onPress={toggleAutoAdvance}
+        style={styles.card}
+        focusedStyle={styles.cardFocused}
+        wrapperStyle={styles.cardWrapper}
+        scaleOnFocus={false}
+      >
+        {() => (
+          <View style={styles.cardInner}>
+            <Text style={styles.cardLabel}>Auto-advance slides</Text>
+            <View
+              style={[
+                styles.toggle,
+                autoAdvance ? styles.toggleOn : styles.toggleOff,
+              ]}
+            >
+              <View
+                style={[
+                  styles.toggleThumb,
+                  autoAdvance ? styles.toggleThumbOn : styles.toggleThumbOff,
+                ]}
+              />
+            </View>
+          </View>
+        )}
+      </FocusableCard>
       <Text style={styles.helperText}>
         Slides advance automatically during dojo display.
       </Text>
@@ -40,6 +57,7 @@ const PlaybackSection = () => {
               slideDuration === d && styles.durationSegmentActive,
             ]}
             focusedStyle={styles.durationSegmentFocused}
+            wrapperStyle={styles.durationWrapper}
             scaleOnFocus={false}
           >
             {() => <Text style={styles.durationText}>{d} seconds</Text>}
@@ -65,17 +83,51 @@ const styles = StyleSheet.create({
     marginBottom: rs(32),
   },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: rs(12),
     paddingHorizontal: rs(28),
     paddingVertical: rs(24),
   },
+  cardFocused: {
+    borderWidth: 2,
+    borderColor: '#4A90E2',
+  },
+  cardWrapper: {
+    flex: 0,
+  },
+  cardInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   cardLabel: {
     fontSize: rs(28),
     color: '#FFFFFF',
+  },
+  toggle: {
+    width: rs(60),
+    height: rs(34),
+    borderRadius: rs(17),
+    justifyContent: 'center',
+    paddingHorizontal: rs(4),
+  },
+  toggleOn: {
+    backgroundColor: '#4A90E2',
+  },
+  toggleOff: {
+    backgroundColor: '#374151',
+  },
+  toggleThumb: {
+    width: rs(26),
+    height: rs(26),
+    borderRadius: rs(13),
+    backgroundColor: '#FFFFFF',
+  },
+  toggleThumbOn: {
+    alignSelf: 'flex-end',
+  },
+  toggleThumbOff: {
+    alignSelf: 'flex-start',
   },
   helperText: {
     fontSize: rs(22),
@@ -94,6 +146,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.1)',
     borderRadius: rs(12),
     overflow: 'hidden',
+  },
+  durationWrapper: {
+    flex: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   durationSegment: {
     flex: 1,
