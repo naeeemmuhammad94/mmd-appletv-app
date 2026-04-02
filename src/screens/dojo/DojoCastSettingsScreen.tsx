@@ -1,11 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ImageBackground } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ImageBackground,
+  TVFocusGuideView,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 // Use Unicode arrow instead of vector-icons for reliability on tvOS
 import { rs } from '../../theme/responsive';
 import { FocusableCard } from '../../components/ui/FocusableCard';
 import { DojoStackParamList } from '../../navigation';
+import { useAuthStore } from '../../store/useAuthStore';
+import { getUserEmail, getUserFirstName } from '../../utils/authHelpers';
 import PlaybackSection from './settings/PlaybackSection';
 import OfflineCacheSection from './settings/OfflineCacheSection';
 import RotationSection from './settings/RotationSection';
@@ -23,6 +31,13 @@ const KARATE_BG =
 const DojoCastSettingsScreen = () => {
   const navigation = useNavigation<Nav>();
   const [activeTab, setActiveTab] = useState<TabId>('Playback');
+  const { logout } = useAuthStore();
+  const accountEmail = useAuthStore(s => getUserEmail(s.user));
+  const accountName = useAuthStore(s => getUserFirstName(s.user));
+
+  const handleLogout = async () => {
+    await logout();
+  };
 
   const renderContent = () => {
     switch (activeTab) {
@@ -39,8 +54,8 @@ const DojoCastSettingsScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
+      {/* Header — wrapped in TVFocusGuideView to bridge to body below */}
+      <TVFocusGuideView autoFocus style={styles.header}>
         <Text style={styles.headerTitle}>Dojo Cast Setting</Text>
         <FocusableCard
           onPress={() => navigation.goBack()}
@@ -51,13 +66,14 @@ const DojoCastSettingsScreen = () => {
         >
           {() => <Text style={styles.backButtonIcon}>{'\u2190'}</Text>}
         </FocusableCard>
-      </View>
+      </TVFocusGuideView>
       <View style={styles.headerDivider} />
 
-      {/* Body */}
+      {/* Body — sidebar and content panel are horizontally adjacent,
+           spatial navigation handles LEFT/RIGHT between them natively */}
       <View style={styles.body}>
         {/* Left sidebar */}
-        <View style={styles.sidebar}>
+        <TVFocusGuideView autoFocus style={styles.sidebar}>
           {TABS.map(tab => (
             <FocusableCard
               key={tab}
@@ -82,10 +98,37 @@ const DojoCastSettingsScreen = () => {
               )}
             </FocusableCard>
           ))}
-        </View>
+
+          {/* Account info + Logout at bottom */}
+          <View style={styles.accountSection}>
+            {accountName || accountEmail ? (
+              <View style={styles.accountInfo}>
+                {accountName ? (
+                  <Text style={styles.accountName} numberOfLines={1}>
+                    {accountName}
+                  </Text>
+                ) : null}
+                {accountEmail ? (
+                  <Text style={styles.accountEmail} numberOfLines={1}>
+                    {accountEmail}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+            <FocusableCard
+              onPress={handleLogout}
+              style={styles.logoutButton}
+              focusedStyle={styles.logoutButtonFocused}
+              wrapperStyle={styles.tabWrapper}
+              scaleOnFocus={false}
+            >
+              {() => <Text style={styles.logoutText}>Logout</Text>}
+            </FocusableCard>
+          </View>
+        </TVFocusGuideView>
 
         {/* Right content panel */}
-        <View style={styles.contentPanel}>
+        <TVFocusGuideView autoFocus style={styles.contentPanel}>
           <ImageBackground
             source={{ uri: KARATE_BG }}
             style={StyleSheet.absoluteFill}
@@ -93,7 +136,7 @@ const DojoCastSettingsScreen = () => {
           />
           <View style={styles.contentOverlay} />
           <View style={styles.contentInner}>{renderContent()}</View>
-        </View>
+        </TVFocusGuideView>
       </View>
     </View>
   );
@@ -174,6 +217,45 @@ const styles = StyleSheet.create({
   },
   tabTextActive: {
     fontWeight: 'bold',
+  },
+  accountSection: {
+    marginTop: 'auto' as any,
+    gap: rs(12),
+  },
+  accountInfo: {
+    paddingHorizontal: rs(24),
+    paddingVertical: rs(16),
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: rs(12),
+    gap: rs(4),
+  },
+  accountName: {
+    fontSize: rs(24),
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  accountEmail: {
+    fontSize: rs(20),
+    color: 'rgba(255,255,255,0.5)',
+  },
+  logoutButton: {
+    paddingVertical: rs(22),
+    paddingHorizontal: rs(24),
+    borderRadius: rs(12),
+    backgroundColor: 'rgba(220, 53, 69, 0.15)',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(220, 53, 69, 0.3)',
+  },
+  logoutButtonFocused: {
+    backgroundColor: '#DC3545',
+    borderColor: '#DC3545',
+    borderWidth: 2,
+  },
+  logoutText: {
+    fontSize: rs(30),
+    color: '#FF6B6B',
+    fontWeight: '500',
   },
   contentPanel: {
     flex: 1,

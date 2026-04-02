@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TVFocusGuideView,
+} from 'react-native';
 import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -69,7 +75,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <TVFocusGuideView autoFocus style={styles.container}>
       <View style={styles.contentContainer}>
         {/* ── Navigation Pill ── */}
         <View style={styles.pillContainer}>
@@ -194,7 +200,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
           )}
         </View>
       </View>
-    </View>
+    </TVFocusGuideView>
   );
 };
 

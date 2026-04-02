@@ -37,15 +37,6 @@ export const DOJO_PROGRAMS: DojoProgram[] = [
     week: 10,
     isActive: false,
   },
-  {
-    id: 'advanced-2',
-    title: "Today's Class \u2014 Advanced",
-    subtitle: 'Speed & Precision',
-    level: 'Black Belt Training',
-    slideCount: 15,
-    week: 10,
-    isActive: false,
-  },
 ];
 
 export const DUMMY_SLIDES: DojoSlide[] = [

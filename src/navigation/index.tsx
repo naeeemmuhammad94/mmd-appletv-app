@@ -3,7 +3,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuthStore } from '../store/useAuthStore';
 import { useTheme } from '../theme';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
+import { rs } from '../theme/responsive';
 
 // Auth Screens
 import RoleSelectScreen from '../screens/auth/RoleSelectScreen';
@@ -152,6 +153,15 @@ export const RootNavigator = () => {
         }}
       >
         <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text
+          style={{
+            color: theme.colors.textSecondary,
+            fontSize: rs(24),
+            marginTop: rs(20),
+          }}
+        >
+          Loading...
+        </Text>
       </View>
     );
   }

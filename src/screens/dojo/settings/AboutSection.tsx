@@ -1,28 +1,47 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TVFocusGuideView } from 'react-native';
 import { rs } from '../../../theme/responsive';
-
-const ABOUT_ROWS = [
-  { label: 'App Version', value: '1.0.3' },
-  { label: 'Build', value: '2026.01.14' },
-  { label: 'Google Account', value: 'mmd.dojocast@gmail.com' },
-  { label: 'Device', value: 'Apple TV \u2013 Dojo Cast' },
-];
+import { FocusableCard } from '../../../components/ui/FocusableCard';
+import { useAuthStore } from '../../../store/useAuthStore';
+import { getUserEmail } from '../../../utils/authHelpers';
 
 const AboutSection = () => {
+  const email = useAuthStore(s => getUserEmail(s.user)) || 'N/A';
+
+  const ABOUT_ROWS = [
+    { label: 'App Version', value: '1.0.3' },
+    { label: 'Build', value: '2026.01.14' },
+    { label: 'Google Account', value: email },
+    { label: 'Device', value: 'Apple TV \u2013 Dojo Cast' },
+  ];
   return (
-    <View style={styles.container}>
+    <TVFocusGuideView autoFocus style={styles.container}>
       <Text style={styles.title}>About</Text>
-      {ABOUT_ROWS.map((row, index) => (
-        <View key={row.label}>
-          <View style={styles.row}>
-            <Text style={styles.label}>{row.label}</Text>
-            <Text style={styles.value}>{row.value}</Text>
+
+      {/* Focusable info card so focus has somewhere to land */}
+      <FocusableCard
+        style={styles.infoCard}
+        focusedStyle={styles.infoCardFocused}
+        wrapperStyle={styles.cardWrapper}
+        scaleOnFocus={false}
+      >
+        {() => (
+          <View>
+            {ABOUT_ROWS.map((row, index) => (
+              <View key={row.label}>
+                <View style={styles.row}>
+                  <Text style={styles.label}>{row.label}</Text>
+                  <Text style={styles.value}>{row.value}</Text>
+                </View>
+                {index < ABOUT_ROWS.length - 1 && (
+                  <View style={styles.divider} />
+                )}
+              </View>
+            ))}
           </View>
-          {index < ABOUT_ROWS.length - 1 && <View style={styles.divider} />}
-        </View>
-      ))}
-    </View>
+        )}
+      </FocusableCard>
+    </TVFocusGuideView>
   );
 };
 
@@ -36,6 +55,18 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginBottom: rs(40),
+  },
+  infoCard: {
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: rs(12),
+    padding: rs(28),
+  },
+  infoCardFocused: {
+    borderWidth: 2,
+    borderColor: '#4A90E2',
+  },
+  cardWrapper: {
+    flex: 0,
   },
   row: {
     flexDirection: 'row',

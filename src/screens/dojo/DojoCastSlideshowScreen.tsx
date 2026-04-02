@@ -1,21 +1,24 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ImageBackground,
   Animated,
+  Image,
+  TVFocusGuideView,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 import { rs, wp } from '../../theme/responsive';
 import { FocusableCard } from '../../components/ui/FocusableCard';
 import { useDojoCastStore } from '../../store/useDojoCastStore';
-import { DUMMY_SLIDES } from '../../data/dojoCastData';
 import { DojoStackParamList } from '../../navigation';
 import Logo from '../../../assets/icons/logo.svg';
 import { useDojoSettingsStore } from '../../store/useDojoSettingsStore';
+import { useDojoCastSlides } from '../../hooks/useDojoCastSlides';
+import { getSlidePreviewUrl } from '../../utils/slideUtils';
 
 type Nav = NativeStackNavigationProp<DojoStackParamList, 'Slideshow'>;
 
@@ -31,12 +34,28 @@ const DojoCastSlideshowScreen = () => {
   } = useDojoCastStore();
 
   const { autoAdvance, slideDuration, rotation } = useDojoSettingsStore();
+  const { data: slidesResponse, isLoading: slidesLoading } =
+    useDojoCastSlides();
+  const apiSlides = useMemo(
+    () =>
+      [...(slidesResponse?.data?.items ?? [])].sort(
+        (a, b) => a.order - b.order,
+      ),
+    [slidesResponse],
+  );
 
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const slidesLengthRef = useRef(apiSlides.length);
 
-  const slides = DUMMY_SLIDES;
-  const currentSlide = slides[currentSlideIndex];
+  useEffect(() => {
+    slidesLengthRef.current = apiSlides.length;
+  }, [apiSlides.length]);
+
+  const currentSlide = apiSlides[currentSlideIndex] ?? null;
+  const currentImageUrl = currentSlide
+    ? getSlidePreviewUrl(currentSlide.url)
+    : null;
 
   // Start playing on mount
   useEffect(() => {
@@ -71,7 +90,10 @@ const DojoCastSlideshowScreen = () => {
   useEffect(() => {
     if (isPlaying && autoAdvance) {
       timerRef.current = setInterval(() => {
-        animateTransition(() => nextSlide(slides.length));
+        const total = slidesLengthRef.current;
+        if (total > 0) {
+          animateTransition(() => nextSlide(total));
+        }
       }, slideDuration * 1000);
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -82,25 +104,22 @@ const DojoCastSlideshowScreen = () => {
         clearInterval(timerRef.current);
       }
     };
-  }, [
-    isPlaying,
-    autoAdvance,
-    slideDuration,
-    nextSlide,
-    slides.length,
-    animateTransition,
-  ]);
+  }, [isPlaying, autoAdvance, slideDuration, nextSlide, animateTransition]);
 
   const handlePlayPause = () => {
     setPlaying(!isPlaying);
   };
 
   const handleNext = () => {
-    animateTransition(() => nextSlide(slides.length));
+    if (slidesLengthRef.current > 0) {
+      animateTransition(() => nextSlide(slidesLengthRef.current));
+    }
   };
 
   const handlePrev = () => {
-    animateTransition(() => prevSlide());
+    if (slidesLengthRef.current > 0) {
+      animateTransition(() => prevSlide(slidesLengthRef.current));
+    }
   };
 
   const handleExitSetup = () => {
@@ -114,6 +133,32 @@ const DojoCastSlideshowScreen = () => {
     navigation.navigate('Setup');
   };
 
+  // Empty / loading guard — don't show blank controls when no slides
+  if (slidesLoading || apiSlides.length === 0) {
+    return (
+      <View style={[styles.container, styles.emptyContainer]}>
+        {slidesLoading ? (
+          <ActivityIndicator size="large" color="#4A90E2" />
+        ) : (
+          <>
+            <Text style={styles.emptyText}>No slides available</Text>
+            <TVFocusGuideView autoFocus style={{ marginTop: rs(24) }}>
+              <FocusableCard
+                onPress={() => navigation.goBack()}
+                style={styles.pausedButton}
+                focusedStyle={styles.pausedButtonFocused}
+                wrapperStyle={{ flex: 0 }}
+                scaleOnFocus={true}
+              >
+                {() => <Text style={styles.pausedButtonText}>Go Back</Text>}
+              </FocusableCard>
+            </TVFocusGuideView>
+          </>
+        )}
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       {/* Slide content */}
@@ -123,29 +168,28 @@ const DojoCastSlideshowScreen = () => {
           { opacity: fadeAnim, transform: [{ rotate: `${rotation}deg` }] },
         ]}
       >
-        <ImageBackground
-          source={{ uri: currentSlide.imageUrl }}
-          style={StyleSheet.absoluteFill}
-          resizeMode="cover"
-        >
-          {/* Gradient overlay for text readability */}
-          <View style={styles.slideOverlay} />
-
-          {/* Slide text */}
-          <View style={styles.slideContent}>
-            {/* Center text */}
-            <View style={styles.centerText}>
-              {currentSlide.title && (
-                <Text style={styles.slideTitle}>{currentSlide.title}</Text>
-              )}
-              {currentSlide.subtitle && (
-                <Text style={styles.slideSubtitle}>
-                  {currentSlide.subtitle}
-                </Text>
-              )}
-            </View>
+        {currentImageUrl ? (
+          <ImageBackground
+            source={{ uri: currentImageUrl }}
+            style={StyleSheet.absoluteFill}
+            resizeMode="contain"
+          >
+            <View style={styles.slideOverlay} />
+          </ImageBackground>
+        ) : currentSlide?.url.includes('canva.com') ? (
+          <View style={[StyleSheet.absoluteFill, styles.canvaPlaceholder]}>
+            <Text style={styles.canvaPlaceholderTitle}>
+              {currentSlide.label}
+            </Text>
+            <Text style={styles.canvaPlaceholderSub}>Canva Presentation</Text>
           </View>
-        </ImageBackground>
+        ) : (
+          <View style={[StyleSheet.absoluteFill, styles.slidePlaceholder]}>
+            <Text style={styles.slidePlaceholderText}>
+              {currentSlide?.label ?? ''}
+            </Text>
+          </View>
+        )}
       </Animated.View>
 
       {/* Paused overlay — "Exit Dojo Setup" + "Change Program" buttons */}
@@ -183,7 +227,7 @@ const DojoCastSlideshowScreen = () => {
       )}
 
       {/* Bottom Controls Bar */}
-      <View style={styles.controlsBar}>
+      <TVFocusGuideView autoFocus style={styles.controlsBar}>
         <View style={styles.controlsCenter}>
           {/* Previous */}
           <FocusableCard
@@ -198,10 +242,9 @@ const DojoCastSlideshowScreen = () => {
             scaleOnFocus={true}
           >
             {() => (
-              <Icon
-                name="skip-previous"
-                size={rs(40)}
-                color="rgba(255, 255, 255, 0.7)"
+              <Image
+                source={require('../../../assets/icons/prev.png')}
+                style={styles.controlIcon}
               />
             )}
           </FocusableCard>
@@ -218,13 +261,19 @@ const DojoCastSlideshowScreen = () => {
             }}
             scaleOnFocus={true}
           >
-            {() => (
-              <Icon
-                name={isPlaying ? 'pause' : 'play-arrow'}
-                size={rs(48)}
-                color="#FFFFFF"
-              />
-            )}
+            {() =>
+              isPlaying ? (
+                <Image
+                  source={require('../../../assets/icons/pause.png')}
+                  style={styles.playIcon}
+                />
+              ) : (
+                <Image
+                  source={require('../../../assets/icons/play.png')}
+                  style={styles.playIcon}
+                />
+              )
+            }
           </FocusableCard>
 
           {/* Next */}
@@ -240,10 +289,9 @@ const DojoCastSlideshowScreen = () => {
             scaleOnFocus={true}
           >
             {() => (
-              <Icon
-                name="skip-next"
-                size={rs(40)}
-                color="rgba(255, 255, 255, 0.7)"
+              <Image
+                source={require('../../../assets/icons/next.png')}
+                style={styles.controlIcon}
               />
             )}
           </FocusableCard>
@@ -253,7 +301,7 @@ const DojoCastSlideshowScreen = () => {
         <View style={styles.logoContainer}>
           <Logo width={rs(48)} height={rs(48)} fill="#FFFFFF" />
         </View>
-      </View>
+      </TVFocusGuideView>
     </View>
   );
 };
@@ -262,6 +310,34 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+  },
+  slidePlaceholder: {
+    backgroundColor: '#1a1a2e',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  slidePlaceholderText: {
+    fontSize: rs(48),
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.4)',
+  },
+  canvaPlaceholder: {
+    backgroundColor: '#7C3AED',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: rs(16),
+  },
+  canvaPlaceholderTitle: {
+    fontSize: rs(60),
+    fontWeight: '800',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    paddingHorizontal: rs(48),
+  },
+  canvaPlaceholderSub: {
+    fontSize: rs(30),
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.7)',
   },
   slideOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -398,6 +474,23 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
     borderWidth: 3,
     transform: [{ scale: 1.1 }],
+  },
+  controlIcon: {
+    width: rs(40),
+    height: rs(40),
+  },
+  playIcon: {
+    width: rs(48),
+    height: rs(48),
+  },
+  emptyContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: rs(36),
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.5)',
   },
   logoContainer: {
     position: 'absolute',

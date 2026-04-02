@@ -19,3 +19,12 @@ export interface DojoSlide {
 }
 
 export type DojoCastConnectionStatus = 'disconnected' | 'connected' | 'error';
+
+export interface DojoCastSlide {
+  dojo: string;
+  url: string;
+  label: string;
+  order: number;
+  _id: string;
+  type: string;
+}

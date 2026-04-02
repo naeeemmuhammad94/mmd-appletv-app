@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   Image,
   ImageBackground,
+  TVFocusGuideView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -13,8 +14,10 @@ import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
 import { FocusableCard } from '../../components/ui/FocusableCard';
 import { useDojoCastStore } from '../../store/useDojoCastStore';
-import { DOJO_PROGRAMS, DOJO_ACCOUNT } from '../../data/dojoCastData';
+import { DOJO_ACCOUNT } from '../../data/dojoCastData';
 import { DojoStackParamList } from '../../navigation';
+import { useDojoCastSlides } from '../../hooks/useDojoCastSlides';
+import { getSlidePreviewUrl } from '../../utils/slideUtils';
 
 type Nav = NativeStackNavigationProp<DojoStackParamList, 'Setup'>;
 
@@ -25,15 +28,30 @@ const KARATE_BG =
 const DojoCastSetupScreen = () => {
   const { theme } = useTheme();
   const navigation = useNavigation<Nav>();
-  const { selectProgram, selectedProgramId } = useDojoCastStore();
+  const { selectProgram, selectedProgramId, setCurrentSlideIndex } =
+    useDojoCastStore();
   const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
+  const {
+    data: slidesResponse,
+    isLoading: slidesLoading,
+    isError: slidesError,
+  } = useDojoCastSlides();
+  const apiSlides = useMemo(
+    () =>
+      [...(slidesResponse?.data?.items ?? [])].sort(
+        (a, b) => a.order - b.order,
+      ),
+    [slidesResponse],
+  );
+  const hasSlides = apiSlides.length > 0;
 
-  const handleProgramSelect = (programId: string) => {
-    selectProgram(programId);
+  const handleProgramSelect = (programId: string, slideUrl?: string) => {
+    selectProgram(programId, slideUrl);
   };
 
   const handleStartLobby = () => {
     if (selectedProgramId) {
+      setCurrentSlideIndex(0);
       navigation.navigate('Slideshow');
     }
   };
@@ -53,8 +71,8 @@ const DojoCastSetupScreen = () => {
         <View style={styles.bgOverlay} />
       </ImageBackground>
 
-      {/* Header Bar */}
-      <View style={styles.header}>
+      {/* Header Bar — wrapped in TVFocusGuideView for spatial navigation */}
+      <TVFocusGuideView autoFocus style={styles.header}>
         <Text style={styles.headerTitle}>Dojo Cast Setup</Text>
         <FocusableCard
           onPress={handleSettings}
@@ -69,7 +87,7 @@ const DojoCastSetupScreen = () => {
         >
           {() => <Text style={styles.settingsIcon}>{'\u2699'}</Text>}
         </FocusableCard>
-      </View>
+      </TVFocusGuideView>
 
       {/* Account Info */}
       <View style={styles.accountSection}>
@@ -86,113 +104,145 @@ const DojoCastSetupScreen = () => {
       {/* Program Selection */}
       <Text style={styles.sectionTitle}>Select Today's Lobby Program</Text>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.programsRow}
-        style={styles.programsScroll}
-      >
-        {DOJO_PROGRAMS.map(program => {
-          const isSelected = selectedProgramId === program.id;
-          const isFocused = focusedCardId === program.id;
+      {/* Loading state */}
+      {slidesLoading && (
+        <Text style={styles.loadingText}>Loading presentations...</Text>
+      )}
 
-          return (
-            <FocusableCard
-              key={program.id}
-              onPress={() => handleProgramSelect(program.id)}
-              onFocus={() => setFocusedCardId(program.id)}
-              onBlur={() =>
-                setFocusedCardId(prev => (prev === program.id ? null : prev))
-              }
-              style={[
-                styles.programCard,
-                {
-                  borderColor:
-                    isSelected || isFocused
-                      ? theme.colors.primary
-                      : 'rgba(100, 120, 180, 0.4)',
-                  borderWidth: isSelected || isFocused ? rs(3) : rs(2),
-                },
-              ]}
-              focusedStyle={{
-                borderColor: theme.colors.primary,
-                borderWidth: rs(3),
-              }}
-              wrapperStyle={{ flex: 1 }}
-              scaleOnFocus={true}
-            >
-              {() => (
-                <View style={styles.programCardInner}>
-                  {/* Card image area */}
-                  <View style={styles.programImageArea}>
-                    <Image
-                      source={{ uri: KARATE_BG }}
-                      style={StyleSheet.absoluteFill}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.programImageOverlay} />
-                  </View>
+      {/* Error state */}
+      {!slidesLoading && slidesError && (
+        <Text style={styles.emptyText}>
+          Could not load slides. Check connection.
+        </Text>
+      )}
 
-                  {/* Card info */}
-                  <View style={styles.programInfo}>
-                    <Text style={styles.programTitle} numberOfLines={2}>
-                      {program.title}
-                    </Text>
-                    <Text style={styles.programSubtitle}>
-                      {program.subtitle}
-                    </Text>
-                    <Text style={styles.programLevel}>{program.level}</Text>
-                    <View style={styles.programMeta}>
-                      <View
-                        style={[
-                          styles.metaDot,
-                          {
-                            backgroundColor: program.isActive
-                              ? theme.colors.primary
-                              : '#6B7280',
-                          },
-                        ]}
-                      />
-                      <Text style={styles.metaText}>
-                        {program.slideCount} slides {'\u2022'} Week{' '}
-                        {program.week}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              )}
-            </FocusableCard>
-          );
-        })}
-      </ScrollView>
+      {/* No slides configured */}
+      {!slidesLoading && !slidesError && !hasSlides && (
+        <Text style={styles.emptyText}>No slides configured.</Text>
+      )}
 
-      {/* Start Button */}
-      <View style={styles.startButtonArea}>
-        <FocusableCard
-          onPress={handleStartLobby}
-          disabled={!selectedProgramId}
-          style={[
-            styles.startButton,
-            {
-              backgroundColor: selectedProgramId
-                ? theme.colors.primary
-                : 'rgba(74, 144, 226, 0.3)',
-            },
-          ]}
-          focusedStyle={[
-            styles.startButtonFocused,
-            {
-              backgroundColor: theme.colors.primary,
-            },
-          ]}
-          wrapperStyle={{ flex: 0 }}
-          scaleOnFocus={true}
-        >
-          {() => (
-            <Text style={styles.startButtonText}>Start Lobby Display</Text>
-          )}
-        </FocusableCard>
-      </View>
+      {/* API Slides */}
+      {hasSlides && (
+        <TVFocusGuideView autoFocus>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.programsRow}
+            style={styles.programsScroll}
+          >
+            {apiSlides.map(slide => {
+              const isSelected = selectedProgramId === slide._id;
+              const isFocused = focusedCardId === slide._id;
+
+              return (
+                <FocusableCard
+                  key={slide._id}
+                  onPress={() => handleProgramSelect(slide._id, slide.url)}
+                  onFocus={() => setFocusedCardId(slide._id)}
+                  onBlur={() =>
+                    setFocusedCardId(prev => (prev === slide._id ? null : prev))
+                  }
+                  style={[
+                    styles.programCard,
+                    {
+                      borderColor:
+                        isSelected || isFocused
+                          ? theme.colors.primary
+                          : 'rgba(100, 120, 180, 0.4)',
+                      borderWidth: isSelected || isFocused ? rs(3) : rs(2),
+                    },
+                  ]}
+                  focusedStyle={{
+                    borderColor: theme.colors.primary,
+                    borderWidth: rs(3),
+                  }}
+                  wrapperStyle={{ flex: 1 }}
+                  scaleOnFocus={true}
+                >
+                  {() => {
+                    const previewUrl = getSlidePreviewUrl(slide.url);
+                    const isCanva = slide.url.includes('canva.com');
+                    const typeLabel = isCanva ? 'Canva' : 'Google Slides';
+
+                    return (
+                      <View style={styles.programCardInner}>
+                        <View style={styles.programImageArea}>
+                          {previewUrl ? (
+                            <Image
+                              source={{ uri: previewUrl }}
+                              style={StyleSheet.absoluteFill}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <View
+                              style={[
+                                StyleSheet.absoluteFill,
+                                styles.canvaPlaceholder,
+                              ]}
+                            >
+                              <Text style={styles.canvaPlaceholderText}>
+                                {isCanva ? 'Canva' : slide.label}
+                              </Text>
+                            </View>
+                          )}
+                          <View style={styles.programImageOverlay} />
+                        </View>
+                        <View style={styles.programInfo}>
+                          <Text style={styles.programTitle} numberOfLines={2}>
+                            {slide.label}
+                          </Text>
+                          <Text style={styles.programSubtitle}>
+                            {typeLabel}
+                          </Text>
+                          <View style={styles.programMeta}>
+                            <View
+                              style={[
+                                styles.metaDot,
+                                { backgroundColor: theme.colors.primary },
+                              ]}
+                            />
+                            <Text style={styles.metaText}>
+                              Order: {slide.order}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  }}
+                </FocusableCard>
+              );
+            })}
+          </ScrollView>
+        </TVFocusGuideView>
+      )}
+
+      {/* Start Button — only shown when slides are available */}
+      {hasSlides && (
+        <TVFocusGuideView autoFocus style={styles.startButtonArea}>
+          <FocusableCard
+            onPress={handleStartLobby}
+            disabled={!selectedProgramId}
+            style={[
+              styles.startButton,
+              {
+                backgroundColor: selectedProgramId
+                  ? theme.colors.primary
+                  : 'rgba(74, 144, 226, 0.3)',
+              },
+            ]}
+            focusedStyle={[
+              styles.startButtonFocused,
+              { backgroundColor: theme.colors.primary },
+            ]}
+            wrapperStyle={{ flex: 0 }}
+            scaleOnFocus={true}
+          >
+            {() => (
+              <Text style={styles.startButtonText}>Start Lobby Display</Text>
+            )}
+          </FocusableCard>
+        </TVFocusGuideView>
+      )}
     </View>
   );
 };
@@ -311,6 +361,17 @@ const styles = StyleSheet.create({
     height: rs(180),
     overflow: 'hidden',
   },
+  canvaPlaceholder: {
+    backgroundColor: '#7C3AED',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  canvaPlaceholderText: {
+    fontSize: rs(32),
+    fontWeight: '700',
+    color: '#FFFFFF',
+    opacity: 0.8,
+  },
   programImageOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
@@ -349,6 +410,18 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: rs(22),
     color: 'rgba(255, 255, 255, 0.45)',
+  },
+  loadingText: {
+    fontSize: rs(28),
+    color: 'rgba(255, 255, 255, 0.5)',
+    textAlign: 'center',
+    marginVertical: rs(40),
+  },
+  emptyText: {
+    fontSize: rs(28),
+    color: 'rgba(255, 255, 255, 0.4)',
+    textAlign: 'center',
+    marginVertical: rs(40),
   },
   // ── Start Button ──
   startButtonArea: {

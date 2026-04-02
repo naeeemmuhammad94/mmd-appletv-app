@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import { View, StyleSheet, ScrollView, TVFocusGuideView } from 'react-native';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
@@ -15,6 +15,7 @@ import { AnnouncementsView } from '../../components/student/AnnouncementsView';
 import { StudyCategory, StudyProgram } from '../../types/study';
 
 import { useNavigation } from '@react-navigation/native';
+import { useExitConfirmation } from '../../hooks/useExitConfirmation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { StudentStackParamList } from '../../navigation';
 import { useStudyStore } from '../../store/useStudyStore';
@@ -40,6 +41,8 @@ const HomeScreen: React.FC = () => {
   } = useStudyStore();
   const { history, loadHistory } = useWatchHistoryStore();
   const { theme } = useTheme();
+
+  useExitConfirmation();
 
   React.useEffect(() => {
     // Fetch initially
@@ -141,55 +144,61 @@ const HomeScreen: React.FC = () => {
           </View>
 
           <View style={styles.contentSection}>
-            <HorizontalRow
-              title="Programs"
-              data={programs}
-              keyExtractor={(item: StudyProgram) => item._id}
-              renderItem={({ item }: { item: StudyProgram }) => (
-                <ProgramCard
-                  title={item.name}
-                  variant="text-only"
-                  onPress={() => handleProgramPress(item)}
-                />
-              )}
-            />
+            <TVFocusGuideView autoFocus>
+              <HorizontalRow
+                title="Programs"
+                data={programs}
+                keyExtractor={(item: StudyProgram) => item._id}
+                renderItem={({ item }: { item: StudyProgram }) => (
+                  <ProgramCard
+                    title={item.name}
+                    variant="text-only"
+                    onPress={() => handleProgramPress(item)}
+                  />
+                )}
+              />
+            </TVFocusGuideView>
 
-            <HorizontalRow
-              title="Training Area"
-              data={trainingAreas}
-              keyExtractor={(item: StudyCategory) => item._id}
-              renderItem={({ item }: { item: StudyCategory }) => (
-                <TrainingAreaCard
-                  title={item.name}
-                  variant="text-only"
-                  onPress={() => handleTrainingAreaPress(item)}
-                />
-              )}
-            />
+            <TVFocusGuideView autoFocus>
+              <HorizontalRow
+                title="Training Area"
+                data={trainingAreas}
+                keyExtractor={(item: StudyCategory) => item._id}
+                renderItem={({ item }: { item: StudyCategory }) => (
+                  <TrainingAreaCard
+                    title={item.name}
+                    variant="text-only"
+                    onPress={() => handleTrainingAreaPress(item)}
+                  />
+                )}
+              />
+            </TVFocusGuideView>
 
             {recentlyWatched.length > 0 && (
-              <HorizontalRow
-                title="Recently Watched"
-                data={recentlyWatched}
-                keyExtractor={(item: StudyContentItem) => item._id}
-                renderItem={({ item }: { item: StudyContentItem }) => {
-                  const entry = history.find(h => h.contentId === item._id);
-                  return (
-                    <ProgramCard
-                      title={item.title}
-                      progress={entry?.progressPercent ?? 0}
-                      previewUrl={item.contentLink}
-                      image={{
-                        uri:
-                          vimeoThumbnails[item._id] ||
-                          item.ranks?.[0]?.stripeImage ||
-                          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
-                      }}
-                      onPress={() => handlePlayContent(item)}
-                    />
-                  );
-                }}
-              />
+              <TVFocusGuideView autoFocus>
+                <HorizontalRow
+                  title="Recently Watched"
+                  data={recentlyWatched}
+                  keyExtractor={(item: StudyContentItem) => item._id}
+                  renderItem={({ item }: { item: StudyContentItem }) => {
+                    const entry = history.find(h => h.contentId === item._id);
+                    return (
+                      <ProgramCard
+                        title={item.title}
+                        progress={entry?.progressPercent ?? 0}
+                        previewUrl={item.contentLink}
+                        image={{
+                          uri:
+                            vimeoThumbnails[item._id] ||
+                            item.ranks?.[0]?.stripeImage ||
+                            'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
+                        }}
+                        onPress={() => handlePlayContent(item)}
+                      />
+                    );
+                  }}
+                />
+              </TVFocusGuideView>
             )}
           </View>
         </ScrollView>

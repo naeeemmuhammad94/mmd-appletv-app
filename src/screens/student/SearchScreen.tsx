@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
   TextInput,
 } from 'react-native';
 import { useTheme } from '../../theme';
@@ -17,6 +15,7 @@ import { useForm, Controller } from 'react-hook-form';
 
 // Components
 import { ProgramCard } from '../../components/ui/ProgramCard';
+import { EmptyState } from '../../components/ui/EmptyState';
 
 // Assets
 import SearchIcon from '../../../assets/icons/search-icon.svg';
@@ -166,23 +165,49 @@ const SearchScreen = () => {
       {/* Main Content Area */}
       <View style={styles.content}>
         {isLoading ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-          </View>
+          <EmptyState
+            message="Loading programs..."
+            variant="loading"
+            onGoBack={() => navigation.goBack()}
+            goBackLabel="Cancel"
+          />
         ) : error ? (
-          <View style={styles.centerContainer}>
-            <Text style={[styles.errorText, { color: theme.colors.error }]}>
-              {error}
-            </Text>
-          </View>
+          <EmptyState
+            message={error}
+            variant="error"
+            onRetry={() => {
+              setError(null);
+              setIsLoading(true);
+              studyService
+                .getStudyContentForContact({
+                  limit: 500,
+                  page: 1,
+                  pagination: true,
+                })
+                .then(response => {
+                  if (response.success && response.data) {
+                    const items = Array.isArray(response.data)
+                      ? response.data
+                      : response.data.items || [];
+                    setAllData(items);
+                  } else {
+                    setError('Failed to load programs.');
+                  }
+                })
+                .catch(() => setError('An error occurred while loading data.'))
+                .finally(() => setIsLoading(false));
+            }}
+            onGoBack={() => navigation.goBack()}
+          />
         ) : (
           <>
             {filteredData.length === 0 ? (
-              <Text
-                style={{ color: theme.colors.textSecondary, fontSize: rs(24) }}
-              >
-                No results found.
-              </Text>
+              <EmptyState
+                message="No results found."
+                variant="empty"
+                onGoBack={() => navigation.goBack()}
+                goBackLabel="Go Back"
+              />
             ) : (
               <FlatList
                 data={filteredData}

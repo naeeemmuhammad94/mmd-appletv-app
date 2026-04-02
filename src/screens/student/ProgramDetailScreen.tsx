@@ -7,7 +7,6 @@ import {
   ImageBackground,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,6 +15,7 @@ import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
 import { LessonCard } from '../../components/student/LessonCard';
 import BackIcon from '../../../assets/icons/back-icon.svg';
+import { EmptyState } from '../../components/ui/EmptyState';
 import PlayButton from '../../../assets/icons/play_button.svg';
 import { useStudyStore } from '../../store/useStudyStore';
 import { useWatchHistoryStore } from '../../store/useWatchHistoryStore';
@@ -36,7 +36,7 @@ type ProgramDetailNavigationProp = NativeStackNavigationProp<
 const ProgramDetailScreen: React.FC = () => {
   const navigation = useNavigation<ProgramDetailNavigationProp>();
   const route = useRoute<ProgramDetailRouteProp>();
-  const { theme } = useTheme();
+  useTheme();
   const { id, type } = route.params;
 
   const {
@@ -516,17 +516,22 @@ const ProgramDetailScreen: React.FC = () => {
 
         {/* Content Sections */}
         {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-          </View>
+          <EmptyState
+            message="Loading lessons..."
+            variant="loading"
+            onGoBack={() => navigation.goBack()}
+            goBackLabel="Cancel"
+          />
         ) : programContent.length === 0 ? (
-          <View style={styles.emptyContentContainer}>
-            <Text style={styles.emptyContentText}>
-              {type === 'category'
+          <EmptyState
+            message={
+              type === 'category'
                 ? 'No lessons found for this program in this training area.'
-                : 'No lessons found.'}
-            </Text>
-          </View>
+                : 'No lessons found.'
+            }
+            variant="empty"
+            onGoBack={() => navigation.goBack()}
+          />
         ) : useFlatGrid ? (
           renderFlatGrid()
         ) : (

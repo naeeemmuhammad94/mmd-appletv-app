@@ -7,6 +7,7 @@ import { RoleCard } from '../../components/auth/RoleCard';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useExitConfirmation } from '../../hooks/useExitConfirmation';
 
 // Assets
 import Logo from '../../../assets/icons/logo.svg';
@@ -38,6 +39,8 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'RoleSelect'>;
 export default function RoleSelectScreen({ navigation }: Props) {
   const { theme } = useTheme();
   const setRole = useAuthStore(state => state.setRole);
+
+  useExitConfirmation();
 
   const handleRoleSelect = async (role: 'student' | 'dojo' | 'admin') => {
     try {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import {
   Pressable,
   ViewStyle,
@@ -18,56 +18,62 @@ interface FocusableCardProps extends PressableProps {
   scaleOnFocus?: boolean;
 }
 
-export const FocusableCard: React.FC<FocusableCardProps> = ({
-  style,
-  focusedStyle,
-  wrapperStyle,
-  children,
-  scaleOnFocus = true,
-  onFocus,
-  onBlur,
-  ...props
-}) => {
-  const [scale] = useState(new Animated.Value(1));
+export const FocusableCard = forwardRef<any, FocusableCardProps>(
+  (
+    {
+      style,
+      focusedStyle,
+      wrapperStyle,
+      children,
+      scaleOnFocus = true,
+      onFocus,
+      onBlur,
+      ...props
+    },
+    ref,
+  ) => {
+    const [scale] = useState(new Animated.Value(1));
 
-  const handleFocus = (e: any) => {
-    if (scaleOnFocus) {
-      Animated.spring(scale, {
-        toValue: 1.05,
-        friction: 3,
-        useNativeDriver: true,
-      }).start();
-    }
-    onFocus?.(e);
-  };
+    const handleFocus = (e: any) => {
+      if (scaleOnFocus) {
+        Animated.spring(scale, {
+          toValue: 1.05,
+          friction: 3,
+          useNativeDriver: true,
+        }).start();
+      }
+      onFocus?.(e);
+    };
 
-  const handleBlur = (e: any) => {
-    if (scaleOnFocus) {
-      Animated.spring(scale, {
-        toValue: 1,
-        friction: 3,
-        useNativeDriver: true,
-      }).start();
-    }
-    onBlur?.(e);
-  };
+    const handleBlur = (e: any) => {
+      if (scaleOnFocus) {
+        Animated.spring(scale, {
+          toValue: 1,
+          friction: 3,
+          useNativeDriver: true,
+        }).start();
+      }
+      onBlur?.(e);
+    };
 
-  return (
-    <Pressable
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      style={({ focused }) => [style, focused && focusedStyle]}
-      {...props}
-    >
-      {({ focused }) => (
-        <Animated.View
-          style={[{ flex: 1, transform: [{ scale }] }, wrapperStyle]}
-        >
-          {typeof children === 'function'
-            ? children({ focused, pressed: false })
-            : children}
-        </Animated.View>
-      )}
-    </Pressable>
-  );
-};
+    return (
+      <Pressable
+        ref={ref}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        style={({ focused }) => [style, focused && focusedStyle]}
+        {...props}
+      >
+        {({ focused }) => (
+          <Animated.View
+            style={[{ flex: 1, transform: [{ scale }] }, wrapperStyle]}
+          >
+            {typeof children === 'function'
+              ? children({ focused, pressed: false })
+              : children}
+          </Animated.View>
+        )}
+      </Pressable>
+    );
+  },
+);
