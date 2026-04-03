@@ -296,8 +296,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: rs(48),
     paddingTop: rs(32),
     paddingBottom: rs(24),
-    borderLeftWidth: rs(4),
-    borderLeftColor: '#4A90E2',
     marginLeft: rs(56),
     marginTop: rs(20),
   },

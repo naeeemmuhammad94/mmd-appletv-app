@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TVFocusGuideView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { rs } from '../../../theme/responsive';
 import { FocusableCard } from '../../../components/ui/FocusableCard';
 import { useAuthStore } from '../../../store/useAuthStore';
@@ -15,7 +15,7 @@ const AboutSection = () => {
     { label: 'Device', value: 'Apple TV \u2013 Dojo Cast' },
   ];
   return (
-    <TVFocusGuideView autoFocus style={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.title}>About</Text>
 
       {/* Focusable info card so focus has somewhere to land */}
@@ -41,7 +41,7 @@ const AboutSection = () => {
           </View>
         )}
       </FocusableCard>
-    </TVFocusGuideView>
+    </View>
   );
 };
 

@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ImageBackground,
-  TVFocusGuideView,
-} from 'react-native';
+import { View, Text, StyleSheet, ImageBackground } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 // Use Unicode arrow instead of vector-icons for reliability on tvOS
@@ -54,8 +48,8 @@ const DojoCastSettingsScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header — wrapped in TVFocusGuideView to bridge to body below */}
-      <TVFocusGuideView autoFocus style={styles.header}>
+      {/* Header */}
+      <View style={styles.header}>
         <Text style={styles.headerTitle}>Dojo Cast Setting</Text>
         <FocusableCard
           onPress={() => navigation.goBack()}
@@ -66,14 +60,14 @@ const DojoCastSettingsScreen = () => {
         >
           {() => <Text style={styles.backButtonIcon}>{'\u2190'}</Text>}
         </FocusableCard>
-      </TVFocusGuideView>
+      </View>
       <View style={styles.headerDivider} />
 
       {/* Body — sidebar and content panel are horizontally adjacent,
            spatial navigation handles LEFT/RIGHT between them natively */}
       <View style={styles.body}>
         {/* Left sidebar */}
-        <TVFocusGuideView autoFocus style={styles.sidebar}>
+        <View style={styles.sidebar}>
           {TABS.map(tab => (
             <FocusableCard
               key={tab}
@@ -125,10 +119,10 @@ const DojoCastSettingsScreen = () => {
               {() => <Text style={styles.logoutText}>Logout</Text>}
             </FocusableCard>
           </View>
-        </TVFocusGuideView>
+        </View>
 
         {/* Right content panel */}
-        <TVFocusGuideView autoFocus style={styles.contentPanel}>
+        <View style={styles.contentPanel}>
           <ImageBackground
             source={{ uri: KARATE_BG }}
             style={StyleSheet.absoluteFill}
@@ -136,7 +130,7 @@ const DojoCastSettingsScreen = () => {
           />
           <View style={styles.contentOverlay} />
           <View style={styles.contentInner}>{renderContent()}</View>
-        </TVFocusGuideView>
+        </View>
       </View>
     </View>
   );

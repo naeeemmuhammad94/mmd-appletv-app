@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TVFocusGuideView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { rs } from '../../../theme/responsive';
 import { FocusableCard } from '../../../components/ui/FocusableCard';
 import { useDojoSettingsStore } from '../../../store/useDojoSettingsStore';
@@ -11,7 +11,7 @@ const PlaybackSection = () => {
     useDojoSettingsStore();
 
   return (
-    <TVFocusGuideView autoFocus style={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.title}>Playback</Text>
 
       {/* Auto-advance toggle */}
@@ -67,7 +67,7 @@ const PlaybackSection = () => {
       <Text style={styles.helperText}>
         Slides advance automatically during dojo display.
       </Text>
-    </TVFocusGuideView>
+    </View>
   );
 };
 

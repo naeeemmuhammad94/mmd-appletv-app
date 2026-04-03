@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TVFocusGuideView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { rs } from '../../../theme/responsive';
 import { FocusableCard } from '../../../components/ui/FocusableCard';
 import { useDojoSettingsStore } from '../../../store/useDojoSettingsStore';
@@ -17,7 +17,7 @@ const RotationSection = () => {
   const { rotation, setRotation } = useDojoSettingsStore();
 
   return (
-    <TVFocusGuideView autoFocus style={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.title}>Rotation Section</Text>
 
       {/* Info card */}
@@ -50,7 +50,7 @@ const RotationSection = () => {
       <Text style={styles.helperText}>
         Changes apply immediately to the slideshow display.
       </Text>
-    </TVFocusGuideView>
+    </View>
   );
 };
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TVFocusGuideView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { rs } from '../../../theme/responsive';
 import { FocusableCard } from '../../../components/ui/FocusableCard';
 import { useDojoSettingsStore } from '../../../store/useDojoSettingsStore';
@@ -13,7 +13,7 @@ const OfflineCacheSection = () => {
   const fillPercent = Math.min(storageUsedMB / MAX_STORAGE_MB, 1);
 
   return (
-    <TVFocusGuideView autoFocus style={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.title}>Offline & Cache</Text>
 
       {/* Offline toggle card */}
@@ -74,7 +74,7 @@ const OfflineCacheSection = () => {
       <Text style={styles.helperText}>
         Clearing cache removes offline access
       </Text>
-    </TVFocusGuideView>
+    </View>
   );
 };
 
