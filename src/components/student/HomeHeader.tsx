@@ -256,12 +256,13 @@ const styles = StyleSheet.create({
     paddingVertical: rs(16),
     paddingHorizontal: rs(40),
     borderRadius: rs(40),
+    borderWidth: 3,
+    borderColor: 'transparent',
   },
   activeTab: {
     backgroundColor: '#3B82F6',
   },
   activeFocusedTab: {
-    borderWidth: 3,
     borderColor: 'white',
     transform: [{ scale: 1.05 }],
   },

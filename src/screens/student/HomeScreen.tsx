@@ -34,6 +34,8 @@ const HomeScreen: React.FC = () => {
     programs,
     trainingAreas,
     contentItems,
+    loadingPrograms,
+    loadingTrainingAreas,
     fetchCategories,
     fetchPrograms,
     fetchTrainingAreas,
@@ -139,6 +141,8 @@ const HomeScreen: React.FC = () => {
             <HorizontalRow
               title="Programs"
               data={programs}
+              loading={loadingPrograms}
+              emptyMessage="No programs available"
               keyExtractor={(item: StudyProgram) => item._id}
               renderItem={({ item }: { item: StudyProgram }) => (
                 <ProgramCard
@@ -154,6 +158,8 @@ const HomeScreen: React.FC = () => {
             <HorizontalRow
               title="Training Area"
               data={trainingAreas}
+              loading={loadingTrainingAreas}
+              emptyMessage="No training areas available"
               keyExtractor={(item: StudyCategory) => item._id}
               renderItem={({ item }: { item: StudyCategory }) => (
                 <TrainingAreaCard
