@@ -41,6 +41,7 @@ const SearchScreen = () => {
 
   const [submittedQuery, setSubmittedQuery] = useState('');
   const [iconFocused, setIconFocused] = useState(false);
+  const [inputTVFocused, setInputTVFocused] = useState(false);
 
   // Data state
   const [allData, setAllData] = useState<StudyContentItem[]>([]);
@@ -130,38 +131,41 @@ const SearchScreen = () => {
       <View style={styles.headerContainer}>
         <View style={styles.headerContentContainer}>
           <View style={styles.pillContainer}>
-            {/* Search Input Area */}
-            <View style={styles.searchContainer}>
-              {/* Native TVOS Spatial Navigation Toggle */}
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                onFocus={() => setIconFocused(true)}
-                onBlur={() => setIconFocused(false)}
-                style={[
-                  styles.backIconButton,
-                  iconFocused && styles.backIconButtonFocused,
-                ]}
-              >
-                <SearchIcon
-                  width={rs(36)}
-                  height={rs(36)}
-                  color="rgba(255,255,255,0.6)"
-                />
-              </TouchableOpacity>
+            {/* Back / Search Icon Button */}
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              onFocus={() => setIconFocused(true)}
+              onBlur={() => setIconFocused(false)}
+              style={[
+                styles.backIconButton,
+                iconFocused && styles.backIconButtonFocused,
+              ]}
+            >
+              <SearchIcon
+                width={rs(36)}
+                height={rs(36)}
+                color="rgba(255,255,255,0.6)"
+              />
+            </TouchableOpacity>
+            <View
+              style={[
+                styles.searchContainer,
+                inputTVFocused && styles.searchContainerFocused,
+              ]}
+            >
               <Controller
                 control={control}
                 name="query"
                 render={({ field: { onChange, value } }) => (
                   <TextInput
-                    style={[
-                      styles.searchInput,
-                      { backgroundColor: 'transparent' },
-                    ]}
+                    style={styles.searchInput}
                     value={value}
                     onChangeText={onChange}
                     placeholder="Search program"
                     placeholderTextColor="#A0A0A0"
                     onSubmitEditing={handleSubmit(onSubmit)}
+                    onFocus={() => setInputTVFocused(true)}
+                    onBlur={() => setInputTVFocused(false)}
                     blurOnSubmit={true}
                     returnKeyType="search"
                   />
@@ -288,33 +292,38 @@ const styles = StyleSheet.create({
     padding: rs(10),
     marginRight: rs(10),
     borderRadius: rs(25),
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
   backIconButtonFocused: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(74, 144, 226, 0.15)',
     borderWidth: 2,
-    borderColor: 'white',
+    borderColor: '#4A90E2',
     transform: [{ scale: 1.1 }],
   },
   searchContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    borderRadius: rs(28),
+    borderWidth: 2,
+    borderColor: 'transparent',
+    marginHorizontal: rs(4),
   },
-  searchIcon: {
-    marginRight: rs(15),
-    marginLeft: rs(10),
+  searchContainerFocused: {
+    borderColor: '#4A90E2',
+    backgroundColor: 'rgba(74, 144, 226, 0.1)',
   },
   searchInput: {
     flex: 1,
-    height: rs(56), // Smaller than the rs(80) container
-    borderRadius: rs(28), // Pill shape for the focus background
-    marginLeft: rs(10), // Space from icon
-    marginRight: rs(10), // Space from right edge
-    paddingHorizontal: rs(20), // Inner text padding
-    fontSize: rs(28), // Slightly smaller to fit rs(56) height comfortably
+    height: rs(56),
+    marginLeft: rs(10),
+    marginRight: rs(10),
+    paddingHorizontal: rs(20),
+    fontSize: rs(28),
     color: '#FFFFFF',
     fontWeight: 'normal',
-    textAlign: 'left', // Strictly left-aligned
+    textAlign: 'left',
   },
   content: {
     flex: 1,

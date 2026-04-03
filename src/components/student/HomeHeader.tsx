@@ -29,8 +29,11 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
   onLogout,
   activeTab = 'Curriculum',
 }) => {
-  const { theme } = useTheme();
-  const navigation = useNavigation<NativeStackNavigationProp<any>>();
+  useTheme();
+  const navigation =
+    useNavigation<
+      NativeStackNavigationProp<Record<string, object | undefined>>
+    >();
   const route = useRoute();
 
   const [focusedTab, setFocusedTab] = React.useState<
@@ -119,9 +122,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                   ? styles.activeTabText
                   : styles.inactiveTabText,
                 focusedTab === 'Curriculum' &&
-                  activeTab !== 'Curriculum' && {
-                    color: theme.colors.background,
-                  },
+                  activeTab !== 'Curriculum' &&
+                  styles.focusedItemText,
               ]}
             >
               Curriculum
@@ -151,9 +153,8 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
                   ? styles.activeTabText
                   : styles.inactiveTabText,
                 focusedTab === 'Announcements' &&
-                  activeTab !== 'Announcements' && {
-                    color: theme.colors.background,
-                  },
+                  activeTab !== 'Announcements' &&
+                  styles.focusedItemText,
               ]}
             >
               Announcements
@@ -244,11 +245,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
+    borderWidth: 2,
+    borderColor: 'transparent',
   },
   focusedSearch: {
-    borderWidth: 3,
-    borderColor: 'white',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 2,
+    borderColor: '#4A90E2',
+    backgroundColor: 'rgba(74, 144, 226, 0.15)',
     transform: [{ scale: 1.05 }],
   },
   // Tabs — NO flex:1, hug content with padding
@@ -263,11 +266,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
   },
   activeFocusedTab: {
-    borderColor: 'white',
+    borderColor: 'rgba(255, 255, 255, 0.45)',
     transform: [{ scale: 1.05 }],
   },
   focusedItem: {
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    borderColor: '#3B82F6',
+  },
+  focusedItemText: {
+    color: '#FFFFFF',
   },
   tabText: {
     fontSize: rs(22),
