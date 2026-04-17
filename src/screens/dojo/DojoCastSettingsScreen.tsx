@@ -1,5 +1,11 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ImageBackground } from 'react-native';
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ImageBackground,
+  useTVEventHandler,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { rs } from '../../theme/responsive';
@@ -29,6 +35,49 @@ const DojoCastSettingsScreen = () => {
   const accountName = useAuthStore(s => getUserFullName(s.user));
   const showEmailRow = Boolean(accountEmail) && accountName !== accountEmail;
 
+  // --- LEFT-press interceptor (SCOPED) ---
+  // Only specific section focusables opt in to LEFT-to-tab behavior via
+  // leftEscapeFocused (set via their onFocus/onBlur). Other focusables leave
+  // the flag false so LEFT keeps its normal spatial-nav behavior — important
+  // for segmented controls like 10s/20s/30s in Playback and Rotate 90° Left /
+  // Right / 180° / Reset in Rotation, where LEFT moves between options.
+  const tabRefs = useRef<Record<TabId, any>>({} as Record<TabId, any>);
+  const leftEscapeFocused = useRef(false);
+  const onLeftEscapeFocus = () => {
+    leftEscapeFocused.current = true;
+  };
+  const onLeftEscapeBlur = () => {
+    leftEscapeFocused.current = false;
+  };
+
+  // UP from the topmost tab (Playback) has no spatial target above it in the
+  // sidebar column; wire it explicitly to the header back button via the same
+  // imperative interceptor pattern.
+  const backButtonRef = useRef<any>(null);
+  const playbackTabFocused = useRef(false);
+  const onPlaybackTabFocus = () => {
+    playbackTabFocused.current = true;
+  };
+  const onPlaybackTabBlur = () => {
+    playbackTabFocused.current = false;
+  };
+
+  useTVEventHandler(evt => {
+    if (
+      (evt?.eventType === 'left' || evt?.eventType === 'swipeLeft') &&
+      leftEscapeFocused.current
+    ) {
+      tabRefs.current[activeTab]?.requestTVFocus?.();
+      return;
+    }
+    if (
+      (evt?.eventType === 'up' || evt?.eventType === 'swipeUp') &&
+      playbackTabFocused.current
+    ) {
+      backButtonRef.current?.requestTVFocus?.();
+    }
+  });
+
   const handleLogout = async () => {
     await logout();
   };
@@ -38,7 +87,12 @@ const DojoCastSettingsScreen = () => {
       case 'Playback':
         return <PlaybackSection />;
       case 'Offline & Cache':
-        return <OfflineCacheSection />;
+        return (
+          <OfflineCacheSection
+            onClearCacheFocus={onLeftEscapeFocus}
+            onClearCacheBlur={onLeftEscapeBlur}
+          />
+        );
       case 'Rotation':
         return <RotationSection />;
       case 'About':
@@ -52,6 +106,7 @@ const DojoCastSettingsScreen = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Dojo Cast Setting</Text>
         <FocusableCard
+          ref={backButtonRef}
           onPress={() => navigation.goBack()}
           style={styles.backButton}
           focusedStyle={styles.backButtonFocused}
@@ -71,7 +126,12 @@ const DojoCastSettingsScreen = () => {
           {TABS.map(tab => (
             <FocusableCard
               key={tab}
+              ref={(node: any) => {
+                if (node) tabRefs.current[tab] = node;
+              }}
               onPress={() => setActiveTab(tab)}
+              onFocus={tab === 'Playback' ? onPlaybackTabFocus : undefined}
+              onBlur={tab === 'Playback' ? onPlaybackTabBlur : undefined}
               style={[
                 styles.tabButton,
                 activeTab === tab && styles.tabButtonActive,

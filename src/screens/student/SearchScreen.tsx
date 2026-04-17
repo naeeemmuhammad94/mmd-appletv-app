@@ -39,6 +39,10 @@ const SearchScreen = () => {
   const { theme } = useTheme();
   const navigation = useNavigation<SearchScreenNavigationProp>();
 
+  const searchInputRef = React.useRef<TextInput | null>(null);
+  const [refsReady, setRefsReady] = React.useState(false);
+  React.useEffect(() => setRefsReady(true), []);
+
   const [submittedQuery, setSubmittedQuery] = useState('');
   const [iconFocused, setIconFocused] = useState(false);
   const [inputTVFocused, setInputTVFocused] = useState(false);
@@ -158,6 +162,7 @@ const SearchScreen = () => {
                 name="query"
                 render={({ field: { onChange, value } }) => (
                   <TextInput
+                    ref={searchInputRef}
                     style={styles.searchInput}
                     value={value}
                     onChangeText={onChange}
@@ -229,7 +234,8 @@ const SearchScreen = () => {
                 numColumns={4}
                 columnWrapperStyle={styles.rowWrapper}
                 showsVerticalScrollIndicator={false}
-                renderItem={({ item }) => (
+                extraData={refsReady}
+                renderItem={({ item, index }) => (
                   <View style={styles.cardWrapper}>
                     <ProgramCard
                       title={item.title}
@@ -243,6 +249,11 @@ const SearchScreen = () => {
                       previewUrl={item.contentLink}
                       onPress={() => handlePlayContent(item)}
                       style={styles.cardOverride}
+                      nextFocusUp={
+                        index < 4 && refsReady
+                          ? searchInputRef.current
+                          : undefined
+                      }
                     />
                   </View>
                 )}
@@ -283,7 +294,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)', // Thin light outline
     alignSelf: 'center',
-    width: rs(1000), // Single wide pill
+    width: rs(1200), // Single wide pill (+20% over prior rs(1000))
     height: rs(80),
   },
   backIconButton: {

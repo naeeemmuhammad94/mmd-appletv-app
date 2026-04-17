@@ -32,7 +32,21 @@ const safeFormatDate = (dateString?: string, formatStr: string = 'MMM d') => {
   }
 };
 
-export const AnnouncementsView: React.FC = () => {
+interface AnnouncementsViewProps {
+  /** Focusable (typically the Announcements tab) that the first item's
+   * UP press should jump to. Kept for completeness — parent typically
+   * uses onFirstItemFocusChange with an imperative requestTVFocus. */
+  firstItemNextFocusUp?: any;
+  /** Fires true when the first list item receives focus, false when it
+   * blurs. Parent wires this to an imperative UP-key handler so UP
+   * from the first item jumps to the Announcements tab reliably. */
+  onFirstItemFocusChange?: (focused: boolean) => void;
+}
+
+export const AnnouncementsView: React.FC<AnnouncementsViewProps> = ({
+  firstItemNextFocusUp,
+  onFirstItemFocusChange,
+}) => {
   const { theme } = useTheme();
   const navigation = useNavigation<Nav>();
   const { announcements, loading, fetchAnnouncements } = useAnnouncementStore();
@@ -49,13 +63,24 @@ export const AnnouncementsView: React.FC = () => {
     });
   };
 
-  const AnnouncementItem = ({ item }: { item: Announcement }) => (
+  const AnnouncementItem = ({
+    item,
+    nextFocusUp,
+    onFocusChange,
+  }: {
+    item: Announcement;
+    nextFocusUp?: any;
+    onFocusChange?: (focused: boolean) => void;
+  }) => (
     <FocusableCard
       onPress={() => handleSelect(item)}
       style={styles.card}
       focusedStyle={styles.cardFocused}
       wrapperStyle={styles.cardWrapper}
       scaleOnFocus={false}
+      nextFocusUp={nextFocusUp}
+      onFocus={() => onFocusChange?.(true)}
+      onBlur={() => onFocusChange?.(false)}
     >
       {({ focused }) => (
         <>
@@ -78,8 +103,18 @@ export const AnnouncementsView: React.FC = () => {
     </FocusableCard>
   );
 
-  const renderItem = ({ item }: { item: Announcement }) => (
-    <AnnouncementItem item={item} />
+  const renderItem = ({
+    item,
+    index,
+  }: {
+    item: Announcement;
+    index: number;
+  }) => (
+    <AnnouncementItem
+      item={item}
+      nextFocusUp={index === 0 ? firstItemNextFocusUp : undefined}
+      onFocusChange={index === 0 ? onFirstItemFocusChange : undefined}
+    />
   );
 
   if (loading && announcements.length === 0) {

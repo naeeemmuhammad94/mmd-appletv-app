@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, forwardRef } from 'react';
 import {
   View,
   Text,
@@ -28,190 +28,202 @@ interface ProgramCardProps {
   width?: number;
   height?: number;
   style?: StyleProp<ViewStyle>;
+  /** tvOS spatial navigation — passed through to the inner FocusableCard. */
+  nextFocusUp?: any;
 }
 
 /** Debounce delay before starting a preview */
 const PREVIEW_DELAY_MS = 600;
 
-export const ProgramCard: React.FC<ProgramCardProps> = ({
-  title,
-  image,
-  progress = 0,
-  showPlayButton = true,
-  previewUrl,
-  variant = 'default',
-  onPress,
-  width = rs(380),
-  height = rs(240),
-  style,
-}) => {
-  const { theme } = useTheme();
-  const autoplayVideos = useStudentSettingsStore(s => s.autoplayVideos);
-  const autoplaySound = useStudentSettingsStore(s => s.autoplaySound);
-  const [isFocused, setIsFocused] = useState(false);
-  const [resolvedPreviewUrl, setResolvedPreviewUrl] = useState<string | null>(
-    null,
-  );
-  const [showPreview, setShowPreview] = useState(false);
-  const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isMounted = useRef(true);
+export const ProgramCard = forwardRef<any, ProgramCardProps>(
+  (
+    {
+      title,
+      image,
+      progress = 0,
+      showPlayButton = true,
+      previewUrl,
+      variant = 'default',
+      onPress,
+      width = rs(380),
+      height = rs(240),
+      style,
+      nextFocusUp,
+    },
+    ref,
+  ) => {
+    const { theme } = useTheme();
+    const autoplayVideos = useStudentSettingsStore(s => s.autoplayVideos);
+    const autoplaySound = useStudentSettingsStore(s => s.autoplaySound);
+    const [isFocused, setIsFocused] = useState(false);
+    const [resolvedPreviewUrl, setResolvedPreviewUrl] = useState<string | null>(
+      null,
+    );
+    const [showPreview, setShowPreview] = useState(false);
+    const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isMounted = useRef(true);
 
-  React.useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
+    React.useEffect(() => {
+      isMounted.current = true;
+      return () => {
+        isMounted.current = false;
+      };
+    }, []);
 
-  const handleFocus = useCallback(() => {
-    setIsFocused(true);
-    // Respect the student's autoplay preference for hover previews.
-    if (previewUrl && variant !== 'text-only' && autoplayVideos) {
-      previewTimer.current = setTimeout(async () => {
-        const resolved = await resolveVimeoUrl(previewUrl);
-        if (resolved && isMounted.current) {
-          setResolvedPreviewUrl(resolved);
-          setShowPreview(true);
-        }
-      }, PREVIEW_DELAY_MS);
-    }
-  }, [previewUrl, variant, autoplayVideos]);
+    const handleFocus = useCallback(() => {
+      setIsFocused(true);
+      // Respect the student's autoplay preference for hover previews.
+      if (previewUrl && variant !== 'text-only' && autoplayVideos) {
+        previewTimer.current = setTimeout(async () => {
+          const resolved = await resolveVimeoUrl(previewUrl);
+          if (resolved && isMounted.current) {
+            setResolvedPreviewUrl(resolved);
+            setShowPreview(true);
+          }
+        }, PREVIEW_DELAY_MS);
+      }
+    }, [previewUrl, variant, autoplayVideos]);
 
-  const handleBlur = useCallback(() => {
-    setIsFocused(false);
-    if (previewTimer.current) {
-      clearTimeout(previewTimer.current);
-      previewTimer.current = null;
-    }
-    setShowPreview(false);
-  }, []);
+    const handleBlur = useCallback(() => {
+      setIsFocused(false);
+      if (previewTimer.current) {
+        clearTimeout(previewTimer.current);
+        previewTimer.current = null;
+      }
+      setShowPreview(false);
+    }, []);
 
-  // Resolve image source
-  const imageSource =
-    typeof image === 'string'
-      ? { uri: image }
-      : image
-      ? image
-      : {
-          uri: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
-        };
+    // Resolve image source
+    const imageSource =
+      typeof image === 'string'
+        ? { uri: image }
+        : image
+        ? image
+        : {
+            uri: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
+          };
 
-  return (
-    <FocusableCard
-      onPress={onPress}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      style={[
-        styles.container,
-        {
-          width,
-          height,
-          borderRadius: rs(10),
-          borderWidth: isFocused ? rs(4) : rs(2),
-          borderColor: isFocused
-            ? theme.colors.primary
-            : 'rgba(100,100,100, 0.5)',
-        },
-        style,
-      ]}
-    >
-      <View
+    return (
+      <FocusableCard
+        ref={ref}
+        nextFocusUp={nextFocusUp}
+        onPress={onPress}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         style={[
-          styles.cardContent,
+          styles.container,
           {
+            width,
+            height,
             borderRadius: rs(10),
-            borderWidth: isFocused ? rs(4) : 0,
-            borderColor: isFocused ? theme.colors.primary : 'transparent',
-            backgroundColor: variant === 'text-only' ? '#1A1D24' : 'black',
+            borderWidth: isFocused ? rs(4) : rs(2),
+            borderColor: isFocused
+              ? theme.colors.primary
+              : 'rgba(100,100,100, 0.5)',
           },
+          style,
         ]}
       >
-        {variant === 'text-only' ? (
-          <View style={styles.textOnlyContainer}>
-            <Text
-              style={styles.textOnlyTitle}
-              numberOfLines={2}
-              ellipsizeMode="tail"
-            >
-              {title.toUpperCase()}
-            </Text>
-          </View>
-        ) : (
-          /* Default Image Layer */
-          <View style={{ flex: 1, backgroundColor: theme.colors.surface }}>
-            <Image
-              source={imageSource}
-              style={[StyleSheet.absoluteFill, { borderRadius: rs(8) }]}
-              resizeMode="cover"
-            />
-
-            {/* Hover-to-play preview — resolved HLS video on focus. Respects
-                 the student's "Play with sound" setting. */}
-            {showPreview && resolvedPreviewUrl && (
-              <Video
-                source={{ uri: resolvedPreviewUrl }}
+        <View
+          style={[
+            styles.cardContent,
+            {
+              borderRadius: rs(10),
+              borderWidth: isFocused ? rs(4) : 0,
+              borderColor: isFocused ? theme.colors.primary : 'transparent',
+              backgroundColor: variant === 'text-only' ? '#1A1D24' : 'black',
+            },
+          ]}
+        >
+          {variant === 'text-only' ? (
+            <View style={styles.textOnlyContainer}>
+              <Text
+                style={styles.textOnlyTitle}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
+                {title.toUpperCase()}
+              </Text>
+            </View>
+          ) : (
+            /* Default Image Layer */
+            <View style={{ flex: 1, backgroundColor: theme.colors.surface }}>
+              <Image
+                source={imageSource}
                 style={[StyleSheet.absoluteFill, { borderRadius: rs(8) }]}
-                muted={!autoplaySound}
-                repeat={true}
                 resizeMode="cover"
-                controls={false}
               />
-            )}
 
-            {/* Overlay Layer */}
-            <View
-              style={[
-                styles.overlay,
-                {
-                  backgroundColor: isFocused
-                    ? 'rgba(0,0,0,0.1)'
-                    : 'rgba(0,0,0,0.4)',
-                },
-              ]}
-            >
-              {/* Center Icon — hidden during preview */}
-              {showPlayButton && !showPreview && (
-                <View style={styles.centerIcon}>
-                  <PlayButton width={rs(64)} height={rs(64)} />
-                </View>
-              )}
-              {(showPreview || !showPlayButton) && (
-                <View style={styles.centerIcon} />
+              {/* Hover-to-play preview — resolved HLS video on focus. Respects
+                 the student's "Play with sound" setting. */}
+              {showPreview && resolvedPreviewUrl && (
+                <Video
+                  source={{ uri: resolvedPreviewUrl }}
+                  style={[StyleSheet.absoluteFill, { borderRadius: rs(8) }]}
+                  muted={!autoplaySound}
+                  repeat={true}
+                  resizeMode="cover"
+                  controls={false}
+                />
               )}
 
-              {/* Bottom Info */}
-              <View style={styles.footer}>
-                <View style={styles.textRow}>
-                  <Text style={styles.title} numberOfLines={1}>
-                    {title}
-                  </Text>
-                  <Text style={styles.percentage}>{Math.round(progress)}%</Text>
-                </View>
-                {/* Progress Bar */}
-                <View
-                  style={[
-                    styles.progressBarTrack,
-                    { backgroundColor: theme.colors.border },
-                  ]}
-                >
+              {/* Overlay Layer */}
+              <View
+                style={[
+                  styles.overlay,
+                  {
+                    backgroundColor: isFocused
+                      ? 'rgba(0,0,0,0.1)'
+                      : 'rgba(0,0,0,0.4)',
+                  },
+                ]}
+              >
+                {/* Center Icon — hidden during preview */}
+                {showPlayButton && !showPreview && (
+                  <View style={styles.centerIcon}>
+                    <PlayButton width={rs(64)} height={rs(64)} />
+                  </View>
+                )}
+                {(showPreview || !showPlayButton) && (
+                  <View style={styles.centerIcon} />
+                )}
+
+                {/* Bottom Info */}
+                <View style={styles.footer}>
+                  <View style={styles.textRow}>
+                    <Text style={styles.title} numberOfLines={1}>
+                      {title}
+                    </Text>
+                    <Text style={styles.percentage}>
+                      {Math.round(progress)}%
+                    </Text>
+                  </View>
+                  {/* Progress Bar */}
                   <View
                     style={[
-                      styles.progressBarFill,
-                      {
-                        width: `${Math.min(100, Math.max(0, progress))}%`,
-                        backgroundColor: theme.colors.primary,
-                      },
+                      styles.progressBarTrack,
+                      { backgroundColor: theme.colors.border },
                     ]}
-                  />
+                  >
+                    <View
+                      style={[
+                        styles.progressBarFill,
+                        {
+                          width: `${Math.min(100, Math.max(0, progress))}%`,
+                          backgroundColor: theme.colors.primary,
+                        },
+                      ]}
+                    />
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
-        )}
-      </View>
-    </FocusableCard>
-  );
-};
+          )}
+        </View>
+      </FocusableCard>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   container: {

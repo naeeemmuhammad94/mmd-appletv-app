@@ -1,5 +1,11 @@
-import React from 'react';
-import { View, Text, StyleSheet, ImageBackground } from 'react-native';
+import React, { useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ImageBackground,
+  useTVEventHandler,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { rs } from '../../theme/responsive';
@@ -25,6 +31,39 @@ const StudentSettingsScreen = () => {
   const accountName = useAuthStore(s => getUserFullName(s.user));
   const showEmailRow = Boolean(accountEmail) && accountName !== accountEmail;
 
+  // --- LEFT-press interceptor ---
+  // Student Settings has only one tab ('Playback'), so there is no
+  // in-section LEFT navigation to preserve (unlike Dojo which has segmented
+  // controls like 10s/20s/30s). Unconditionally redirect any LEFT press on
+  // this screen to the active sidebar tab. Idempotent: LEFT on the tab
+  // itself re-focuses itself (no visible change).
+  const tabRefs = useRef<Record<TabId, any>>({} as Record<TabId, any>);
+
+  // UP from the topmost tab (Playback) has no spatial target above it in the
+  // sidebar column; wire it to the header back button via the same imperative
+  // pattern used on Dojo Settings.
+  const backButtonRef = useRef<any>(null);
+  const playbackTabFocused = useRef(false);
+  const onPlaybackTabFocus = () => {
+    playbackTabFocused.current = true;
+  };
+  const onPlaybackTabBlur = () => {
+    playbackTabFocused.current = false;
+  };
+
+  useTVEventHandler(evt => {
+    if (evt?.eventType === 'left' || evt?.eventType === 'swipeLeft') {
+      tabRefs.current[activeTab]?.requestTVFocus?.();
+      return;
+    }
+    if (
+      (evt?.eventType === 'up' || evt?.eventType === 'swipeUp') &&
+      playbackTabFocused.current
+    ) {
+      backButtonRef.current?.requestTVFocus?.();
+    }
+  });
+
   const handleLogout = async () => {
     await logout();
   };
@@ -41,6 +80,7 @@ const StudentSettingsScreen = () => {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Student Settings</Text>
         <FocusableCard
+          ref={backButtonRef}
           onPress={() => navigation.goBack()}
           style={styles.backButton}
           focusedStyle={styles.backButtonFocused}
@@ -58,7 +98,12 @@ const StudentSettingsScreen = () => {
           {TABS.map(tab => (
             <FocusableCard
               key={tab}
+              ref={(node: any) => {
+                if (node) tabRefs.current[tab] = node;
+              }}
               onPress={() => setActiveTab(tab)}
+              onFocus={tab === 'Playback' ? onPlaybackTabFocus : undefined}
+              onBlur={tab === 'Playback' ? onPlaybackTabBlur : undefined}
               style={[
                 styles.tabButton,
                 activeTab === tab && styles.tabButtonActive,

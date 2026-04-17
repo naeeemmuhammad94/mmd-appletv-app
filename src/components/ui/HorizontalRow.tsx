@@ -16,17 +16,29 @@ import { rs } from '../../theme/responsive';
 interface HorizontalRowProps {
   title: string;
   data: any[];
+  /**
+   * Renders one card. Receives `item`, `index`, and `cardRef`. Callers should
+   * attach `cardRef` to the rendered card at `index === 0` so HomeScreen can
+   * target it as a `nextFocusUp` destination from the row below.
+   */
   renderItem: ({
     item,
     index,
+    cardRef,
   }: {
     item: any;
     index: number;
+    cardRef?: React.Ref<any>;
   }) => React.ReactElement;
   keyExtractor: (item: any) => string;
   contentContainerStyle?: StyleProp<ViewStyle>;
   loading?: boolean;
   emptyMessage?: string;
+  /**
+   * External ref to the first card (index 0). Consumers pass this so the
+   * card can be used as a `nextFocusUp` target for cards in the row below.
+   */
+  firstCardRef?: React.MutableRefObject<any>;
 }
 
 export const HorizontalRow: React.FC<HorizontalRowProps> = ({
@@ -37,6 +49,7 @@ export const HorizontalRow: React.FC<HorizontalRowProps> = ({
   contentContainerStyle,
   loading = false,
   emptyMessage = 'No content available',
+  firstCardRef,
 }) => {
   const { theme } = useTheme();
 
@@ -145,7 +158,14 @@ export const HorizontalRow: React.FC<HorizontalRowProps> = ({
         ref={flatListRef}
         horizontal
         data={data}
-        renderItem={renderItem}
+        renderItem={({ item, index }) =>
+          renderItem({
+            item,
+            index,
+            // Only the first card receives the external ref — LEFT-edge case.
+            cardRef: index === 0 ? firstCardRef : undefined,
+          })
+        }
         keyExtractor={keyExtractor}
         contentContainerStyle={[styles.listContent, contentContainerStyle]}
         showsHorizontalScrollIndicator={false}

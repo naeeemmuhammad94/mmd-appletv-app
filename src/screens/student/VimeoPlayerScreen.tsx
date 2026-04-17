@@ -62,8 +62,15 @@ const VimeoPlayerScreen: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Add to watch history
-    if (contentId) {
+    // Only record video content in watch history. The upstream callers
+    // already gate on contentLink type, but guard here too so history
+    // stays strictly video-only regardless of navigation path.
+    const isVideoUrl =
+      !!videoUrl &&
+      (videoUrl.includes('vimeo') ||
+        videoUrl.includes('.mp4') ||
+        videoUrl.includes('.m3u8'));
+    if (contentId && isVideoUrl) {
       addToHistory({ contentId, title: title || 'Unknown Video' });
     }
 

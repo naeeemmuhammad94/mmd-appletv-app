@@ -4,11 +4,12 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  ImageBackground,
-  TouchableOpacity,
+  Image,
   Alert,
   BackHandler,
   Pressable,
+  findNodeHandle,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -16,11 +17,13 @@ import { StudentStackParamList } from '../../navigation';
 import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
 import { LessonCard } from '../../components/student/LessonCard';
-import BackIcon from '../../../assets/icons/back-icon.svg';
+import { FocusableCard } from '../../components/ui/FocusableCard';
 import { EmptyState } from '../../components/ui/EmptyState';
 import PlayButton from '../../../assets/icons/play_button.svg';
+import FileIcon from '../../../assets/icons/file.svg';
 import { useStudyStore } from '../../store/useStudyStore';
 import { useWatchHistoryStore } from '../../store/useWatchHistoryStore';
+import { useStudentSettingsStore } from '../../store/useStudentSettingsStore';
 import { StudyContentItem, StudySubCategory } from '../../types/study';
 import { useVimeoThumbnails } from '../../hooks/useVimeoThumbnails';
 import Video from 'react-native-video';
@@ -38,7 +41,7 @@ type ProgramDetailNavigationProp = NativeStackNavigationProp<
 const ProgramDetailScreen: React.FC = () => {
   const navigation = useNavigation<ProgramDetailNavigationProp>();
   const route = useRoute<ProgramDetailRouteProp>();
-  useTheme();
+  const { theme } = useTheme();
   const { id, type } = route.params;
 
   const {
@@ -50,6 +53,8 @@ const ProgramDetailScreen: React.FC = () => {
     clearError,
   } = useStudyStore();
   const { history, loadHistory } = useWatchHistoryStore();
+  const autoplayVideos = useStudentSettingsStore(s => s.autoplayVideos);
+  const autoplaySound = useStudentSettingsStore(s => s.autoplaySound);
   const [programContent, setProgramContent] = React.useState<
     StudyContentItem[]
   >([]);
@@ -77,16 +82,25 @@ const ProgramDetailScreen: React.FC = () => {
 
   // Fetch hero thumbnail when first content item changes
   const heroContentLink = programContent[0]?.contentLink;
+  const heroIsVideo =
+    !!heroContentLink &&
+    (heroContentLink.includes('vimeo') ||
+      heroContentLink.includes('.mp4') ||
+      heroContentLink.includes('.m3u8'));
+
   React.useEffect(() => {
-    if (!heroContentLink) return;
+    if (!heroIsVideo || !heroContentLink) return;
     fetchVimeoThumbnail(heroContentLink).then(thumb => {
       if (thumb && heroIsMounted.current) setHeroThumb(thumb);
     });
-  }, [heroContentLink]);
+  }, [heroIsVideo, heroContentLink]);
 
   const handleHeroFocus = React.useCallback(() => {
     setHeroFocused(true);
-    if (!heroContentLink) return;
+    if (!heroIsVideo || !heroContentLink) return;
+    // Respect the student's autoplay preference — if disabled, never trigger
+    // the hover-to-play preview.
+    if (!autoplayVideos) return;
     heroPreviewTimer.current = setTimeout(async () => {
       let url = heroResolvedUrl;
       if (!url) {
@@ -95,7 +109,7 @@ const ProgramDetailScreen: React.FC = () => {
       }
       if (url && heroIsMounted.current) setShowHeroPreview(true);
     }, 600);
-  }, [heroContentLink, heroResolvedUrl]);
+  }, [heroIsVideo, heroContentLink, heroResolvedUrl, autoplayVideos]);
 
   const handleHeroBlur = React.useCallback(() => {
     setHeroFocused(false);
@@ -109,6 +123,37 @@ const ProgramDetailScreen: React.FC = () => {
   React.useEffect(() => {
     loadHistory();
   }, [loadHistory]);
+
+  // Spatial-navigation handles. Using callback refs + findNodeHandle so the
+  // numeric reactTag is captured the moment the view attaches — avoids
+  // timing races where .current isn't populated when a sibling re-renders.
+  const [backHandle, setBackHandle] = React.useState<number | null>(null);
+  const [firstChipHandle, setFirstChipHandle] = React.useState<number | null>(
+    null,
+  );
+  const [goBackHandle, setGoBackHandle] = React.useState<number | null>(null);
+  // State (not ref) so changing the focused chip re-renders Go Back with an
+  // updated nextFocusUp — a ref mutation would never propagate to the native
+  // prop after the initial render.
+  const [focusedChipHandle, setFocusedChipHandle] = React.useState<
+    number | null
+  >(null);
+  const setBackRef = React.useCallback((node: any) => {
+    setBackHandle(node ? findNodeHandle(node) : null);
+  }, []);
+  const setFirstChipRef = React.useCallback((node: any) => {
+    setFirstChipHandle(node ? findNodeHandle(node) : null);
+  }, []);
+  const setGoBackRef = React.useCallback((node: any) => {
+    setGoBackHandle(node ? findNodeHandle(node) : null);
+  }, []);
+
+  // If programs reload mid-session, chips remount with new reactTags — the
+  // captured focusedChipHandle would be stale and Go Back's nextFocusUp
+  // would resolve to nothing. Reset to fall back on firstChipHandle.
+  React.useEffect(() => {
+    setFocusedChipHandle(null);
+  }, [programs]);
 
   // Default to the first program if viewing a category
   const [selectedProgramId, setSelectedProgramId] = React.useState<
@@ -125,15 +170,6 @@ const ProgramDetailScreen: React.FC = () => {
       return prog?.name || 'Program';
     }
   }, [type, id, categories, programs]);
-
-  // Get the category image when type is 'category'
-  const categoryImage = React.useMemo(() => {
-    if (type === 'category') {
-      const cat = categories.find(c => c._id === id);
-      return cat?.image;
-    }
-    return undefined;
-  }, [type, id, categories]);
 
   // Sub-categories for this category (only relevant when type === 'category')
   const currentSubCategories: StudySubCategory[] = React.useMemo(() => {
@@ -173,26 +209,6 @@ const ProgramDetailScreen: React.FC = () => {
         }
         const { contentItems } = useStudyStore.getState();
         setProgramContent(contentItems);
-
-        // Debug logging
-        console.log(
-          '[ProgramDetail] type:',
-          type,
-          'id:',
-          id,
-          'selectedProgram:',
-          selectedProgramId,
-        );
-        console.log(
-          '[ProgramDetail] contentItems loaded:',
-          contentItems.length,
-        );
-        if (contentItems.length > 0) {
-          console.log(
-            '[ProgramDetail] First item programs:',
-            JSON.stringify(contentItems[0].programs?.map(p => p.name)),
-          );
-        }
       } catch (err) {
         console.error('Failed to load program content', err);
       } finally {
@@ -304,17 +320,20 @@ const ProgramDetailScreen: React.FC = () => {
   const useFlatGrid =
     type === 'category' && sections.length === 0 && programContent.length > 0;
 
-  // Hero Title: use the first video's title if available, otherwise fallback to the category/program name
-  const heroTitle = programContent[0]?.title || displayName;
+  // When the active filter (program × training-area) yields no lessons, skip
+  // the hero entirely — it's a large olive/category-colored band with no
+  // meaningful content. A slim top strip takes over to keep the back button
+  // reachable and the empty-state visible below.
+  const hasContent = loading || programContent.length > 0;
 
-  // Hero image: Vimeo thumbnail > first item's stripe image > category image > fallback
+  // Hero image: Vimeo thumbnail > first item's stripe image. No category-image
+  // or base64 fallback — those render as an olive/colored band while data is
+  // loading (mirrors HomeScreen, which also returns null until a real thumb
+  // resolves and conditionally renders <Image>).
   const heroImageUri =
-    heroThumb ||
-    programContent[0]?.ranks?.[0]?.stripeImage ||
-    categoryImage ||
-    'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==';
+    heroThumb || programContent[0]?.ranks?.[0]?.stripeImage || null;
 
-  const heroImage = { uri: heroImageUri };
+  const heroImage = heroImageUri ? { uri: heroImageUri } : null;
 
   const handlePlayPress = (item?: StudyContentItem) => {
     const targetItem = item || programContent[0];
@@ -432,6 +451,11 @@ const ProgramDetailScreen: React.FC = () => {
   const renderProgramChips = () => {
     if (type !== 'category' || programs.length === 0) return null;
 
+    // When the hero is hidden (empty state), chips are the first focusable
+    // row in the ScrollView — wire UP to the header back button so users
+    // can always escape back out.
+    const chipUpOverride = !hasContent && backHandle ? backHandle : undefined;
+
     return (
       <View style={styles.chipsWrapper}>
         <ScrollView
@@ -439,24 +463,33 @@ const ProgramDetailScreen: React.FC = () => {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipsContainer}
         >
-          {programs.map(program => {
+          {programs.map((program, index) => {
             const isSelected = program._id === selectedProgramId;
             return (
-              <TouchableOpacity
+              <Pressable
                 key={program._id}
+                ref={index === 0 ? setFirstChipRef : undefined}
                 onPress={() => setSelectedProgramId(program._id)}
-                style={[styles.chip, isSelected && styles.chipSelected]}
-                activeOpacity={0.7}
+                onFocus={e => {
+                  setFocusedChipHandle(e.nativeEvent.target);
+                }}
+                style={({ focused }) => [
+                  styles.chip,
+                  isSelected && {
+                    backgroundColor: theme.colors.primary,
+                    borderColor: theme.colors.primary,
+                  },
+                  focused && styles.chipFocused,
+                ]}
+                nextFocusUp={chipUpOverride}
+                nextFocusDown={
+                  !hasContent && goBackHandle ? goBackHandle : undefined
+                }
               >
-                <Text
-                  style={[
-                    styles.chipText,
-                    isSelected && styles.chipTextSelected,
-                  ]}
-                >
+                <Text style={styles.chipText}>
                   {program.name.toUpperCase()}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             );
           })}
         </ScrollView>
@@ -466,64 +499,87 @@ const ProgramDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
+      {/* Top header — matches the Student Settings screen: bold title on the
+           left, square back button on the right, dark bar, thin divider. Lives
+           outside the ScrollView so it's always visible. */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {displayName}
+        </Text>
+        <FocusableCard
+          ref={setBackRef}
+          onPress={handleBackPress}
+          style={styles.backButton}
+          focusedStyle={styles.backButtonFocused}
+          wrapperStyle={styles.backWrapper}
+          scaleOnFocus={false}
+          nextFocusDown={
+            !hasContent && firstChipHandle ? firstChipHandle : undefined
+          }
+        >
+          {() => <Text style={styles.backIcon}>{'\u2190'}</Text>}
+        </FocusableCard>
+      </View>
+      <View style={styles.headerDivider} />
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero Section */}
-        <View style={styles.heroWrapper}>
-          <ImageBackground
-            source={heroImage}
-            style={styles.heroImage}
-            imageStyle={styles.heroImageStyle}
-            resizeMode="cover"
+        {/* Hero banner — only rendered when there is content. Back button and
+             title live in the dedicated header above, so the banner is a clean
+             single-pressable with just the preview + play/file icon. */}
+        {hasContent && (
+          <Pressable
+            onPress={() => handlePlayPress()}
+            onFocus={handleHeroFocus}
+            onBlur={handleHeroBlur}
+            hasTVPreferredFocus={true}
+            style={[
+              styles.heroWrapper,
+              heroFocused && styles.heroWrapperFocused,
+            ]}
           >
-            {/* Preview video overlay */}
+            {/* Thumbnail and preview video are positioned at full width with
+               a 16:9 aspect — the container is shorter, so the bottom spills
+               over and gets clipped by overflow:hidden. Result: full width
+               + top of frame visible (no pillar bars, no head cropped). */}
+            {heroImage && (
+              <Image
+                source={heroImage}
+                style={styles.heroMedia}
+                resizeMode="cover"
+              />
+            )}
             {showHeroPreview && heroResolvedUrl && (
               <Video
                 source={{ uri: heroResolvedUrl }}
-                style={StyleSheet.absoluteFillObject}
-                muted={false}
+                style={styles.heroMedia}
+                muted={!autoplaySound}
                 repeat={true}
                 resizeMode="cover"
                 controls={false}
               />
             )}
 
-            <View style={styles.heroOverlay}>
-              {/* Back Button */}
-              <Pressable
-                onPress={handleBackPress}
-                style={({ focused }) => [
-                  styles.backButton,
-                  focused && styles.backButtonFocused,
-                ]}
-                hasTVPreferredFocus={true}
-              >
-                <BackIcon width={rs(28)} height={rs(28)} fill="white" />
-              </Pressable>
-
-              {/* Center Play Button — focusable, triggers preview */}
-              <TouchableOpacity
-                onPress={() => handlePlayPress()}
-                style={[
-                  styles.centerPlay,
-                  heroFocused && styles.centerPlayFocused,
-                ]}
-                onFocus={handleHeroFocus}
-                onBlur={handleHeroBlur}
-              >
-                {!showHeroPreview && (
+            {!showHeroPreview && !loading && (
+              <View style={styles.centerIcon} pointerEvents="none">
+                {heroIsVideo ? (
                   <PlayButton width={rs(72)} height={rs(72)} />
+                ) : (
+                  <FileIcon width={rs(72)} height={rs(72)} />
                 )}
-              </TouchableOpacity>
+              </View>
+            )}
 
-              {/* Title */}
-              <Text style={styles.categoryLabel}>{heroTitle}</Text>
-            </View>
-          </ImageBackground>
-        </View>
+            {loading && (
+              <View style={styles.centerIcon} pointerEvents="none">
+                <ActivityIndicator size="large" color="#4A90E2" />
+              </View>
+            )}
+          </Pressable>
+        )}
 
         {/* Program Filter Chips (Category View Only) */}
         {renderProgramChips()}
@@ -537,15 +593,30 @@ const ProgramDetailScreen: React.FC = () => {
             goBackLabel="Cancel"
           />
         ) : programContent.length === 0 ? (
-          <EmptyState
-            message={
-              type === 'category'
+          <View style={styles.goBackContainer}>
+            <Text style={styles.emptyContentText}>
+              {type === 'category'
                 ? 'No lessons found for this program in this training area.'
-                : 'No lessons found.'
-            }
-            variant="empty"
-            onGoBack={() => navigation.goBack()}
-          />
+                : 'No lessons found.'}
+            </Text>
+            <Pressable
+              ref={setGoBackRef}
+              onPress={handleBackPress}
+              nextFocusUp={focusedChipHandle ?? firstChipHandle ?? undefined}
+              style={styles.goBackTextWrap}
+            >
+              {({ focused }) => (
+                <Text
+                  style={[
+                    styles.goBackText,
+                    focused && styles.goBackTextFocused,
+                  ]}
+                >
+                  Go Back
+                </Text>
+              )}
+            </Pressable>
+          </View>
         ) : useFlatGrid ? (
           renderFlatGrid()
         ) : (
@@ -576,21 +647,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: rs(100),
   },
-  emptyContentContainer: {
-    padding: rs(60),
-    alignItems: 'center',
-  },
-  loadingContainer: {
-    padding: rs(60),
-    alignItems: 'center',
-  },
   emptyContentText: {
     color: 'rgba(255, 255, 255, 0.6)',
     fontSize: rs(24),
     textAlign: 'center',
+    marginBottom: rs(40),
+  },
+  goBackContainer: {
+    padding: rs(60),
+    alignItems: 'center',
+  },
+  goBackTextWrap: {
+    paddingVertical: rs(8),
+    paddingHorizontal: rs(12),
+  },
+  goBackText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: rs(24),
+    fontWeight: '500',
+  },
+  goBackTextFocused: {
+    color: '#4A90E2',
+    textDecorationLine: 'underline',
   },
   // Program Chips
   chipsWrapper: {
+    marginTop: rs(40),
     marginBottom: rs(20),
   },
   chipsContainer: {
@@ -605,17 +687,56 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'transparent',
   },
-  chipSelected: {
-    backgroundColor: '#007AFF', // Standard iOS/tvOS blue highlight
-    borderColor: '#007AFF',
+  // Matches homepage nav focus ring (HomeHeader.focusedItem):
+  // translucent blue tint + solid blue border.
+  chipFocused: {
+    backgroundColor: 'rgba(74,144,226,0.5)',
+    borderColor: '#4A90E2',
   },
   chipText: {
     color: 'white',
     fontSize: rs(20),
     fontWeight: '600',
   },
-  chipTextSelected: {
-    color: 'white',
+  // Top header — mirrors StudentSettingsScreen
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: rs(48),
+    paddingVertical: rs(28),
+    backgroundColor: '#0C101E',
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: rs(42),
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginRight: rs(24),
+  },
+  backButton: {
+    width: rs(64),
+    height: rs(64),
+    borderRadius: rs(12),
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backButtonFocused: {
+    backgroundColor: '#4A90E2',
+  },
+  backWrapper: {
+    flex: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backIcon: {
+    fontSize: rs(32),
+    color: '#FFFFFF',
+  },
+  headerDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
   // Hero
   heroWrapper: {
@@ -624,49 +745,26 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     height: rs(480),
     marginBottom: rs(40),
+    backgroundColor: '#000',
+    position: 'relative',
   },
-  heroImage: {
-    flex: 1,
-    justifyContent: 'flex-end',
+  heroWrapperFocused: {
+    borderWidth: 4,
+    borderColor: '#4A90E2',
   },
-  heroImageStyle: {
-    borderRadius: 0,
-  },
-  heroOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'flex-end',
-    padding: rs(24),
-  },
-  backButton: {
+  heroMedia: {
     position: 'absolute',
-    top: rs(20),
-    left: rs(20),
-    padding: rs(8),
-    zIndex: 10,
-    borderRadius: rs(8),
+    top: 0,
+    left: 0,
+    width: '100%',
+    aspectRatio: 16 / 9,
   },
-  backButtonFocused: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  centerPlay: {
+  centerIcon: {
     position: 'absolute',
     top: '50%',
     left: '50%',
     marginTop: rs(-36),
     marginLeft: rs(-36),
-    padding: rs(12),
-  },
-  centerPlayFocused: {
-    transform: [{ scale: 1.15 }],
-  },
-  categoryLabel: {
-    color: 'white',
-    fontSize: rs(28),
-    fontWeight: 'bold',
-    textShadowColor: 'rgba(0,0,0,0.7)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
   },
   // Tier sections
   tierContainer: {

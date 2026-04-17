@@ -10,9 +10,11 @@ import { FocusableCard } from '../ui/FocusableCard';
 import { useTheme } from '../../theme';
 import { rs } from '../../theme/responsive';
 import PlayButton from '../../../assets/icons/play_button.svg';
+import FileIcon from '../../../assets/icons/file.svg';
 import LockIcon from '../../../assets/icons/lock.svg';
 import Video from 'react-native-video';
 import { resolveVimeoUrl } from '../../utils/resolveVimeoUrl';
+import { useStudentSettingsStore } from '../../store/useStudentSettingsStore';
 
 interface LessonCardProps {
   title?: string;
@@ -32,6 +34,10 @@ interface LessonCardProps {
 /** Debounce delay before starting a preview (avoids loading during fast scrolling) */
 const PREVIEW_DELAY_MS = 600;
 
+const isPlayableVideo = (url?: string) =>
+  !!url &&
+  (url.includes('vimeo') || url.includes('.mp4') || url.includes('.m3u8'));
+
 export const LessonCard: React.FC<LessonCardProps> = ({
   title,
   duration,
@@ -45,6 +51,8 @@ export const LessonCard: React.FC<LessonCardProps> = ({
   height = rs(240),
 }) => {
   const { theme } = useTheme();
+  const autoplayVideos = useStudentSettingsStore(s => s.autoplayVideos);
+  const autoplaySound = useStudentSettingsStore(s => s.autoplaySound);
   const [isFocused, setIsFocused] = useState(false);
   const [resolvedPreviewUrl, setResolvedPreviewUrl] = useState<string | null>(
     null,
@@ -60,9 +68,11 @@ export const LessonCard: React.FC<LessonCardProps> = ({
     };
   }, []);
 
+  const isVideo = isPlayableVideo(previewUrl);
+
   const handleFocus = useCallback(() => {
     setIsFocused(true);
-    if (previewUrl && !locked) {
+    if (isVideo && previewUrl && !locked && autoplayVideos) {
       previewTimer.current = setTimeout(async () => {
         // Resolve the Vimeo URL to an HLS stream
         const resolved = await resolveVimeoUrl(previewUrl);
@@ -72,7 +82,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
         }
       }, PREVIEW_DELAY_MS);
     }
-  }, [previewUrl, locked]);
+  }, [isVideo, previewUrl, locked, autoplayVideos]);
 
   const handleBlur = useCallback(() => {
     setIsFocused(false);
@@ -159,7 +169,7 @@ export const LessonCard: React.FC<LessonCardProps> = ({
             <Video
               source={{ uri: resolvedPreviewUrl }}
               style={[StyleSheet.absoluteFill, { borderRadius: rs(8) }]}
-              muted={false}
+              muted={!autoplaySound}
               repeat={true}
               resizeMode="cover"
               controls={false}
@@ -177,10 +187,15 @@ export const LessonCard: React.FC<LessonCardProps> = ({
               },
             ]}
           >
-            {/* Center Play Icon — hidden during preview */}
+            {/* Center icon — play for videos, file icon for non-video
+               content (PDF/other); hidden during preview playback. */}
             {!showPreview && (
               <View style={styles.centerIcon}>
-                <PlayButton width={rs(64)} height={rs(64)} />
+                {isVideo ? (
+                  <PlayButton width={rs(64)} height={rs(64)} />
+                ) : (
+                  <FileIcon width={rs(64)} height={rs(64)} />
+                )}
               </View>
             )}
             {showPreview && <View style={styles.centerIcon} />}

@@ -22,11 +22,16 @@ const FOCUS_BLUE_TINT = 'rgba(74,144,226,0.5)';
 interface HomeHeaderProps {
   onTabChange?: (tab: 'Curriculum' | 'Announcements') => void;
   activeTab?: 'Curriculum' | 'Announcements';
+  /** Optional refs so parents can target tabs from below (UP into header). */
+  curriculumTabRef?: React.Ref<any>;
+  announcementsTabRef?: React.Ref<any>;
 }
 
 export const HomeHeader: React.FC<HomeHeaderProps> = ({
   onTabChange,
   activeTab = 'Curriculum',
+  curriculumTabRef,
+  announcementsTabRef,
 }) => {
   useTheme();
   const navigation =
@@ -81,6 +86,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
           {/* Curriculum Tab */}
           <TouchableOpacity
+            ref={curriculumTabRef}
             onPress={() => handleTabPress('Curriculum')}
             onFocus={() => setFocusedTab('Curriculum')}
             // Guard blur: only clear if we're still the focused tab. Prevents
@@ -116,6 +122,7 @@ export const HomeHeader: React.FC<HomeHeaderProps> = ({
 
           {/* Announcements Tab */}
           <TouchableOpacity
+            ref={announcementsTabRef}
             onPress={() => handleTabPress('Announcements')}
             onFocus={() => setFocusedTab('Announcements')}
             // Same guard as Curriculum — see note above.

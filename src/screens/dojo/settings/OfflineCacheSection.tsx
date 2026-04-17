@@ -6,7 +6,19 @@ import { useDojoSettingsStore } from '../../../store/useDojoSettingsStore';
 
 const MAX_STORAGE_MB = 500;
 
-const OfflineCacheSection = () => {
+interface OfflineCacheSectionProps {
+  /** Opt-in hooks for the screen's scoped LEFT-to-tab interceptor. Only the
+   *  Clear cached slides button wires these — the Offline toggle is left on
+   *  default spatial nav so in-section UP/DOWN between it and Clear cache
+   *  behaves naturally. */
+  onClearCacheFocus?: () => void;
+  onClearCacheBlur?: () => void;
+}
+
+const OfflineCacheSection: React.FC<OfflineCacheSectionProps> = ({
+  onClearCacheFocus,
+  onClearCacheBlur,
+}) => {
   const { offlineMode, storageUsedMB, toggleOfflineMode, clearCache } =
     useDojoSettingsStore();
 
@@ -64,6 +76,8 @@ const OfflineCacheSection = () => {
       {/* Clear cache button */}
       <FocusableCard
         onPress={clearCache}
+        onFocus={onClearCacheFocus}
+        onBlur={onClearCacheBlur}
         style={styles.clearButton}
         focusedStyle={styles.clearButtonFocused}
         wrapperStyle={styles.clearButtonWrapper}
