@@ -106,3 +106,57 @@ export function roleLabel(role: 'student' | 'dojo' | 'admin'): string {
       return role;
   }
 }
+
+/**
+ * Returns the dojoId associated with the authed user, or null.
+ *
+ * On this backend the login response has a top-level `dojo: { _id, owner, ... }`
+ * where `_id` is the dojo document id and `owner` is the user's `_id` string.
+ * Some other surfaces (`dojo-crm-frontend`) use `dojoDetail` instead of `dojo`,
+ * so we check both. We do NOT fall back to `dojo.owner` — that's the user's id,
+ * not the dojo's id.
+ *
+ * Cascade:
+ *   1. `user.dojo._id`              — current backend shape (preferred)
+ *   2. `user.dojoDetail._id`        — CRM-frontend shape
+ *   3. nested `user.user.dojo._id` / `user.user.dojoDetail._id`
+ *   4. `user.dojoId` string field   — some API surfaces return this
+ *   5. `user._id` / `user.user._id` — last-resort (only correct for accounts
+ *                                     where the user record IS the dojo)
+ */
+export function selectDojoId(user: unknown): string | null {
+  if (!user || typeof user !== 'object') return null;
+  const u = user as Record<string, unknown>;
+  const nested = u.user as Record<string, unknown> | undefined;
+
+  const pickId = (dojoLike: unknown): string | null => {
+    if (!dojoLike || typeof dojoLike !== 'object') return null;
+    const d = dojoLike as Record<string, unknown>;
+    if (typeof d._id === 'string' && d._id) return d._id;
+    return null;
+  };
+
+  // 1–3: explicit dojo-association fields (flat or nested)
+  const candidates: unknown[] = [
+    u.dojo,
+    u.dojoDetail,
+    nested?.dojo,
+    nested?.dojoDetail,
+  ];
+  for (const c of candidates) {
+    const id = pickId(c);
+    if (id) return id;
+  }
+
+  // 4: direct dojoId string field
+  if (typeof u.dojoId === 'string' && u.dojoId) return u.dojoId;
+  if (nested && typeof nested.dojoId === 'string' && nested.dojoId) {
+    return nested.dojoId;
+  }
+
+  // 5: last-resort (legacy — only correct when account == dojo)
+  if (typeof u._id === 'string' && u._id) return u._id;
+  if (nested && typeof nested._id === 'string' && nested._id) return nested._id;
+
+  return null;
+}

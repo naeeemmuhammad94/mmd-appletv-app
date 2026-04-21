@@ -132,6 +132,24 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         if (responseData.userRole) {
           essentialUserData.userRole = responseData.userRole;
         }
+        // Persist dojo association fields so Dojo-role screens can resolve
+        // the dojoId after app restart. This backend puts the association
+        // at top-level `dojo: { _id, owner, schoolName, ... }`. Other
+        // surfaces (CRM) use `dojoDetail` — we persist both if present.
+        const rd = responseData as unknown as Record<string, unknown>;
+        const ui = userInfo as Record<string, unknown>;
+        const dojoSource = rd.dojo ?? ui.dojo;
+        if (dojoSource) {
+          essentialUserData.dojo = dojoSource;
+        }
+        const dojoDetailSource = rd.dojoDetail ?? ui.dojoDetail;
+        if (dojoDetailSource) {
+          essentialUserData.dojoDetail = dojoDetailSource;
+        }
+        const dojoIdField = rd.dojoId ?? ui.dojoId;
+        if (typeof dojoIdField === 'string' && dojoIdField) {
+          essentialUserData.dojoId = dojoIdField;
+        }
         await secureStorage.setUserData(JSON.stringify(essentialUserData));
 
         set({

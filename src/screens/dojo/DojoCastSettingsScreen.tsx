@@ -51,15 +51,21 @@ const DojoCastSettingsScreen = () => {
   };
 
   // UP from the topmost tab (Playback) has no spatial target above it in the
-  // sidebar column; wire it explicitly to the header back button via the same
-  // imperative interceptor pattern.
+  // sidebar column; wire it explicitly to the header back button via an
+  // imperative interceptor. We track WHEN Playback gained focus (not just a
+  // boolean) because `useTVEventHandler` fires AFTER native focus changes —
+  // without a dwell-time guard, pressing UP from Offline & Cache would (a)
+  // move focus to Playback, (b) set the flag in Playback's onFocus, (c) then
+  // fire the interceptor for the same keypress and jump straight to the back
+  // button. 300ms is safely longer than a focus-transition round trip
+  // (<50ms) but short enough to feel instant for a deliberate UP-press.
   const backButtonRef = useRef<any>(null);
-  const playbackTabFocused = useRef(false);
+  const playbackFocusedAt = useRef<number | null>(null);
   const onPlaybackTabFocus = () => {
-    playbackTabFocused.current = true;
+    playbackFocusedAt.current = Date.now();
   };
   const onPlaybackTabBlur = () => {
-    playbackTabFocused.current = false;
+    playbackFocusedAt.current = null;
   };
 
   useTVEventHandler(evt => {
@@ -72,7 +78,8 @@ const DojoCastSettingsScreen = () => {
     }
     if (
       (evt?.eventType === 'up' || evt?.eventType === 'swipeUp') &&
-      playbackTabFocused.current
+      playbackFocusedAt.current !== null &&
+      Date.now() - playbackFocusedAt.current > 300
     ) {
       backButtonRef.current?.requestTVFocus?.();
     }

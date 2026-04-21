@@ -16,8 +16,10 @@ import { FocusableCard } from '../../components/ui/FocusableCard';
 import { useDojoCastStore } from '../../store/useDojoCastStore';
 import { DOJO_ACCOUNT } from '../../data/dojoCastData';
 import { DojoStackParamList } from '../../navigation';
-import { useDojoCastSlides } from '../../hooks/useDojoCastSlides';
-import { getSlidePreviewUrl } from '../../utils/slideUtils';
+import { useDojoCastPlaylist } from '../../hooks/useDojoCastPlaylist';
+import { useAuthStore } from '../../store/useAuthStore';
+import { selectDojoId } from '../../utils/authHelpers';
+import { filterAndSortDecks } from '../../utils/dojoCastFilters';
 
 type Nav = NativeStackNavigationProp<DojoStackParamList, 'Setup'>;
 
@@ -28,29 +30,56 @@ const KARATE_BG =
 const DojoCastSetupScreen = () => {
   const { theme } = useTheme();
   const navigation = useNavigation<Nav>();
-  const { selectProgram, selectedProgramId, setCurrentSlideIndex } =
+  const { selectDeck, selectedDeckId, setCurrentSlideIndex } =
     useDojoCastStore();
   const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
+  const user = useAuthStore(s => s.user);
+  const dojoId = useAuthStore(s => selectDojoId(s.user));
   const {
-    data: slidesResponse,
+    data: playlist,
     isLoading: slidesLoading,
     isError: slidesError,
-  } = useDojoCastSlides();
-  const apiSlides = useMemo(
-    () =>
-      [...(slidesResponse?.data?.items ?? [])].sort(
-        (a, b) => a.order - b.order,
-      ),
-    [slidesResponse],
-  );
-  const hasSlides = apiSlides.length > 0;
+    error: slidesErrorObj,
+  } = useDojoCastPlaylist(dojoId);
 
-  const handleProgramSelect = (programId: string, slideUrl?: string) => {
-    selectProgram(programId, slideUrl);
+  const decks = useMemo(
+    () => filterAndSortDecks(playlist?.data?.decks ?? []),
+    [playlist],
+  );
+  const hasSlides = decks.length > 0;
+
+  // TEMP DEBUG — remove before ship. Prints at every render.
+  const u = user as any;
+
+  console.log(
+    '[DojoCast debug]',
+    JSON.stringify(
+      {
+        dojoId,
+        userKeys:
+          user && typeof user === 'object' ? Object.keys(user).join(',') : user,
+        user_dojo_id: u?.dojo?._id,
+        user_dojoDetail_id: u?.dojoDetail?._id,
+        user_user_dojo_id: u?.user?.dojo?._id,
+        user_dojoId: u?.dojoId,
+        user_id: u?._id,
+        slidesLoading,
+        slidesError,
+        errorMsg: (slidesErrorObj as any)?.message,
+        rawDeckCount: playlist?.data?.decks?.length ?? 'no-playlist',
+        filteredDeckCount: decks.length,
+      },
+      null,
+      2,
+    ),
+  );
+
+  const handleDeckSelect = (deckId: string) => {
+    selectDeck(deckId);
   };
 
   const handleStartLobby = () => {
-    if (selectedProgramId) {
+    if (selectedDeckId) {
       setCurrentSlideIndex(0);
       navigation.navigate('Slideshow');
     }
@@ -118,7 +147,9 @@ const DojoCastSetupScreen = () => {
 
       {/* No slides configured */}
       {!slidesLoading && !slidesError && !hasSlides && (
-        <Text style={styles.emptyText}>No slides configured.</Text>
+        <Text style={styles.emptyText}>
+          No presentations available — check CRM to add or activate a deck.
+        </Text>
       )}
 
       {/* API Slides */}
@@ -130,17 +161,20 @@ const DojoCastSetupScreen = () => {
             contentContainerStyle={styles.programsRow}
             style={styles.programsScroll}
           >
-            {apiSlides.map(slide => {
-              const isSelected = selectedProgramId === slide._id;
-              const isFocused = focusedCardId === slide._id;
+            {decks.map(deck => {
+              const isSelected = selectedDeckId === deck._id;
+              const isFocused = focusedCardId === deck._id;
+              const thumb = deck.slides[0]?.thumbnailUrl;
+              const sourceLabel =
+                deck.source === 'google_slides' ? 'Google Slides' : 'Canva';
 
               return (
                 <FocusableCard
-                  key={slide._id}
-                  onPress={() => handleProgramSelect(slide._id, slide.url)}
-                  onFocus={() => setFocusedCardId(slide._id)}
+                  key={deck._id}
+                  onPress={() => handleDeckSelect(deck._id)}
+                  onFocus={() => setFocusedCardId(deck._id)}
                   onBlur={() =>
-                    setFocusedCardId(prev => (prev === slide._id ? null : prev))
+                    setFocusedCardId(prev => (prev === deck._id ? null : prev))
                   }
                   style={[
                     styles.programCard,
@@ -159,56 +193,51 @@ const DojoCastSetupScreen = () => {
                   wrapperStyle={{ flex: 1 }}
                   scaleOnFocus={true}
                 >
-                  {() => {
-                    const previewUrl = getSlidePreviewUrl(slide.url);
-                    const isCanva = slide.url.includes('canva.com');
-                    const typeLabel = isCanva ? 'Canva' : 'Google Slides';
-
-                    return (
-                      <View style={styles.programCardInner}>
-                        <View style={styles.programImageArea}>
-                          {previewUrl ? (
-                            <Image
-                              source={{ uri: previewUrl }}
-                              style={StyleSheet.absoluteFill}
-                              resizeMode="cover"
-                            />
-                          ) : (
-                            <View
-                              style={[
-                                StyleSheet.absoluteFill,
-                                styles.canvaPlaceholder,
-                              ]}
-                            >
-                              <Text style={styles.canvaPlaceholderText}>
-                                {isCanva ? 'Canva' : slide.label}
-                              </Text>
-                            </View>
-                          )}
-                          <View style={styles.programImageOverlay} />
-                        </View>
-                        <View style={styles.programInfo}>
-                          <Text style={styles.programTitle} numberOfLines={2}>
-                            {slide.label}
-                          </Text>
-                          <Text style={styles.programSubtitle}>
-                            {typeLabel}
-                          </Text>
-                          <View style={styles.programMeta}>
-                            <View
-                              style={[
-                                styles.metaDot,
-                                { backgroundColor: theme.colors.primary },
-                              ]}
-                            />
-                            <Text style={styles.metaText}>
-                              Order: {slide.order}
+                  {() => (
+                    <View style={styles.programCardInner}>
+                      <View style={styles.programImageArea}>
+                        {thumb ? (
+                          <Image
+                            source={{ uri: thumb }}
+                            style={StyleSheet.absoluteFill}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View
+                            style={[
+                              StyleSheet.absoluteFill,
+                              styles.thumbPlaceholder,
+                            ]}
+                          >
+                            <Text style={styles.thumbPlaceholderText}>
+                              {deck.label}
                             </Text>
                           </View>
+                        )}
+                        <View style={styles.programImageOverlay} />
+                      </View>
+                      <View style={styles.programInfo}>
+                        <Text style={styles.programTitle} numberOfLines={2}>
+                          {deck.label}
+                        </Text>
+                        <Text style={styles.programSubtitle}>
+                          {sourceLabel}
+                        </Text>
+                        <View style={styles.programMeta}>
+                          <View
+                            style={[
+                              styles.metaDot,
+                              { backgroundColor: theme.colors.primary },
+                            ]}
+                          />
+                          <Text style={styles.metaText}>
+                            {deck.slides.length} slide
+                            {deck.slides.length !== 1 ? 's' : ''}
+                          </Text>
                         </View>
                       </View>
-                    );
-                  }}
+                    </View>
+                  )}
                 </FocusableCard>
               );
             })}
@@ -221,11 +250,11 @@ const DojoCastSetupScreen = () => {
         <TVFocusGuideView autoFocus style={styles.startButtonArea}>
           <FocusableCard
             onPress={handleStartLobby}
-            disabled={!selectedProgramId}
+            disabled={!selectedDeckId}
             style={[
               styles.startButton,
               {
-                backgroundColor: selectedProgramId
+                backgroundColor: selectedDeckId
                   ? theme.colors.primary
                   : 'rgba(74, 144, 226, 0.3)',
               },
@@ -359,16 +388,17 @@ const styles = StyleSheet.create({
     height: rs(180),
     overflow: 'hidden',
   },
-  canvaPlaceholder: {
-    backgroundColor: '#7C3AED',
+  thumbPlaceholder: {
+    backgroundColor: '#1a1a2e',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: rs(16),
   },
-  canvaPlaceholderText: {
-    fontSize: rs(32),
+  thumbPlaceholderText: {
+    fontSize: rs(28),
     fontWeight: '700',
-    color: '#FFFFFF',
-    opacity: 0.8,
+    color: 'rgba(255, 255, 255, 0.55)',
+    textAlign: 'center',
   },
   programImageOverlay: {
     ...StyleSheet.absoluteFillObject,
