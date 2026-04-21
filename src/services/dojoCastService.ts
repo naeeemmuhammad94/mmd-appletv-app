@@ -1,23 +1,18 @@
 /**
  * Dojo Cast Service
- * API calls for Dojo Cast slides
+ * API calls for the new Dojo Cast playlist endpoint.
  */
 
 import axiosInstance from './axios';
 import { ApiEndpoints } from '../config/apiEndpoints';
 import type { CommonApiResponse } from '../types/auth';
-import type { DojoCastSlide } from '../types/dojo';
+import type { DojoCastPlaylistResponse } from '../types/dojo';
 
-interface DojoCastSlidesResponse {
-  items: DojoCastSlide[];
-}
-
-/**
- * Get dojo cast slides for the current dojo
- */
-export async function getDojoCastSlides(): Promise<
-  CommonApiResponse<DojoCastSlidesResponse>
-> {
-  const { data } = await axiosInstance.get(ApiEndpoints.DojoCastSlides);
+export async function getDojoCastPlaylist(
+  dojoId: string,
+): Promise<CommonApiResponse<DojoCastPlaylistResponse>> {
+  const { data } = await axiosInstance.get(
+    `${ApiEndpoints.DojoCastPlaylist}/${dojoId}`,
+  );
   return data;
 }

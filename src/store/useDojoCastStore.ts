@@ -3,13 +3,12 @@ import { DojoCastConnectionStatus } from '../types/dojo';
 
 interface DojoCastState {
   connectionStatus: DojoCastConnectionStatus;
-  selectedProgramId: string | null;
-  selectedSlideUrl: string | null;
+  selectedDeckId: string | null;
   isPlaying: boolean;
   currentSlideIndex: number;
 
   setConnectionStatus: (status: DojoCastConnectionStatus) => void;
-  selectProgram: (programId: string, slideUrl?: string) => void;
+  selectDeck: (deckId: string) => void;
   setPlaying: (playing: boolean) => void;
   setCurrentSlideIndex: (index: number) => void;
   nextSlide: (totalSlides: number) => void;
@@ -19,15 +18,13 @@ interface DojoCastState {
 
 export const useDojoCastStore = create<DojoCastState>(set => ({
   connectionStatus: 'disconnected',
-  selectedProgramId: null,
-  selectedSlideUrl: null,
+  selectedDeckId: null,
   isPlaying: false,
   currentSlideIndex: 0,
 
   setConnectionStatus: status => set({ connectionStatus: status }),
 
-  selectProgram: (programId, slideUrl) =>
-    set({ selectedProgramId: programId, selectedSlideUrl: slideUrl ?? null }),
+  selectDeck: deckId => set({ selectedDeckId: deckId, currentSlideIndex: 0 }),
 
   setPlaying: playing => set({ isPlaying: playing }),
 
@@ -56,8 +53,7 @@ export const useDojoCastStore = create<DojoCastState>(set => ({
   reset: () =>
     set({
       connectionStatus: 'disconnected',
-      selectedProgramId: null,
-      selectedSlideUrl: null,
+      selectedDeckId: null,
       isPlaying: false,
       currentSlideIndex: 0,
     }),

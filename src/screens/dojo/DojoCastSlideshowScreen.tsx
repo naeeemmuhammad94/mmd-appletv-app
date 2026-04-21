@@ -1,24 +1,24 @@
-import React, { useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ImageBackground,
-  Animated,
   Image,
   TVFocusGuideView,
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { rs, wp } from '../../theme/responsive';
+import { rs } from '../../theme/responsive';
 import { FocusableCard } from '../../components/ui/FocusableCard';
 import { useDojoCastStore } from '../../store/useDojoCastStore';
 import { DojoStackParamList } from '../../navigation';
 import Logo from '../../../assets/icons/logo.svg';
 import { useDojoSettingsStore } from '../../store/useDojoSettingsStore';
-import { useDojoCastSlides } from '../../hooks/useDojoCastSlides';
-import { getSlidePreviewUrl } from '../../utils/slideUtils';
+import { useDojoCastPlaylist } from '../../hooks/useDojoCastPlaylist';
+import { useAuthStore } from '../../store/useAuthStore';
+import { selectDojoId } from '../../utils/authHelpers';
+import { filterAndSortDecks } from '../../utils/dojoCastFilters';
 
 type Nav = NativeStackNavigationProp<DojoStackParamList, 'Slideshow'>;
 
@@ -27,6 +27,7 @@ const DojoCastSlideshowScreen = () => {
   const {
     isPlaying,
     currentSlideIndex,
+    selectedDeckId,
     setPlaying,
     nextSlide,
     prevSlide,
@@ -34,28 +35,27 @@ const DojoCastSlideshowScreen = () => {
   } = useDojoCastStore();
 
   const { autoAdvance, slideDuration, rotation } = useDojoSettingsStore();
-  const { data: slidesResponse, isLoading: slidesLoading } =
-    useDojoCastSlides();
-  const apiSlides = useMemo(
-    () =>
-      [...(slidesResponse?.data?.items ?? [])].sort(
-        (a, b) => a.order - b.order,
-      ),
-    [slidesResponse],
-  );
 
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const dojoId = useAuthStore(s => selectDojoId(s.user));
+  const { data: playlist, isLoading: slidesLoading } =
+    useDojoCastPlaylist(dojoId);
+
+  const sortedSlides = useMemo(() => {
+    const decks = filterAndSortDecks(playlist?.data?.decks ?? []);
+    const deck = decks.find(d => d._id === selectedDeckId);
+    if (!deck) return [];
+    return [...deck.slides].sort((a, b) => a.slideIndex - b.slideIndex);
+  }, [playlist, selectedDeckId]);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const slidesLengthRef = useRef(apiSlides.length);
+  const slidesLengthRef = useRef(sortedSlides.length);
+  const consecutiveErrorsRef = useRef(0);
 
   useEffect(() => {
-    slidesLengthRef.current = apiSlides.length;
-  }, [apiSlides.length]);
+    slidesLengthRef.current = sortedSlides.length;
+  }, [sortedSlides.length]);
 
-  const currentSlide = apiSlides[currentSlideIndex] ?? null;
-  const currentImageUrl = currentSlide
-    ? getSlidePreviewUrl(currentSlide.url)
-    : null;
+  const currentSlide = sortedSlides[currentSlideIndex] ?? null;
 
   // Start playing on mount
   useEffect(() => {
@@ -68,32 +68,16 @@ const DojoCastSlideshowScreen = () => {
     };
   }, [setPlaying]);
 
-  const animateTransition = useCallback(
-    (callback: () => void) => {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start(() => {
-        callback();
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }).start();
-      });
-    },
-    [fadeAnim],
-  );
-
-  // Auto-advance slides
+  // Auto-advance slides. No transition animation — slides swap instantly
+  // on URI change (stock <Image> + S3 cache). A 400ms double-fade was
+  // previously wrapped around every advance and (a) looked like a blink-
+  // to-black and (b) required a lock that silently dropped Next clicks
+  // during the 800ms window. Both issues vanish with a hard cut.
   useEffect(() => {
     if (isPlaying && autoAdvance) {
       timerRef.current = setInterval(() => {
         const total = slidesLengthRef.current;
-        if (total > 0) {
-          animateTransition(() => nextSlide(total));
-        }
+        if (total > 0) nextSlide(total);
       }, slideDuration * 1000);
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -104,21 +88,24 @@ const DojoCastSlideshowScreen = () => {
         clearInterval(timerRef.current);
       }
     };
-  }, [isPlaying, autoAdvance, slideDuration, nextSlide, animateTransition]);
+  }, [isPlaying, autoAdvance, slideDuration, nextSlide]);
 
   const handlePlayPause = () => {
+    // TEMP DEBUG — remove before ship.
+
+    console.log('[DojoCast] handlePlayPause fired; isPlaying was', isPlaying);
     setPlaying(!isPlaying);
   };
 
   const handleNext = () => {
     if (slidesLengthRef.current > 0) {
-      animateTransition(() => nextSlide(slidesLengthRef.current));
+      nextSlide(slidesLengthRef.current);
     }
   };
 
   const handlePrev = () => {
     if (slidesLengthRef.current > 0) {
-      animateTransition(() => prevSlide(slidesLengthRef.current));
+      prevSlide(slidesLengthRef.current);
     }
   };
 
@@ -134,7 +121,7 @@ const DojoCastSlideshowScreen = () => {
   };
 
   // Empty / loading guard — don't show blank controls when no slides
-  if (slidesLoading || apiSlides.length === 0) {
+  if (slidesLoading || sortedSlides.length === 0) {
     return (
       <View style={[styles.container, styles.emptyContainer]}>
         {slidesLoading ? (
@@ -161,36 +148,41 @@ const DojoCastSlideshowScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Slide content */}
-      <Animated.View
+      {/* Slide content — hard cut between slides, no fade. */}
+      <View
         style={[
           StyleSheet.absoluteFill,
-          { opacity: fadeAnim, transform: [{ rotate: `${rotation}deg` }] },
+          { transform: [{ rotate: `${rotation}deg` }] },
         ]}
       >
-        {currentImageUrl ? (
-          <ImageBackground
-            source={{ uri: currentImageUrl }}
+        {currentSlide ? (
+          <Image
+            source={{ uri: currentSlide.imageUrl }}
             style={StyleSheet.absoluteFill}
             resizeMode="contain"
-          >
-            <View style={styles.slideOverlay} />
-          </ImageBackground>
-        ) : currentSlide?.url.includes('canva.com') ? (
-          <View style={[StyleSheet.absoluteFill, styles.canvaPlaceholder]}>
-            <Text style={styles.canvaPlaceholderTitle}>
-              {currentSlide.label}
-            </Text>
-            <Text style={styles.canvaPlaceholderSub}>Canva Presentation</Text>
-          </View>
+            onLoad={() => {
+              consecutiveErrorsRef.current = 0;
+            }}
+            onError={() => {
+              consecutiveErrorsRef.current += 1;
+              if (
+                slidesLengthRef.current > 0 &&
+                consecutiveErrorsRef.current < slidesLengthRef.current
+              ) {
+                nextSlide(slidesLengthRef.current);
+              }
+              // else: every slide errored once this cycle. We stop the
+              // onError-triggered self-advance so we don't infinite-recurse; the
+              // autoplay timer will keep ticking normally through broken images
+              // and the operator can press Back to exit.
+            }}
+          />
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.slidePlaceholder]}>
-            <Text style={styles.slidePlaceholderText}>
-              {currentSlide?.label ?? ''}
-            </Text>
+            <Text style={styles.slidePlaceholderText}>No slide</Text>
           </View>
         )}
-      </Animated.View>
+      </View>
 
       {/* Paused overlay — "Exit Dojo Setup" + "Change Program" buttons */}
       {!isPlaying && (
@@ -227,9 +219,14 @@ const DojoCastSlideshowScreen = () => {
       )}
 
       {/* Bottom Controls Bar */}
-      <TVFocusGuideView autoFocus style={styles.controlsBar}>
+      {/* NOTE: dropped `autoFocus` on this guide view — it re-asserted after
+          re-renders (every slide change), causing focus to jump back to the
+          center button. First FocusableCard still receives focus on mount. */}
+      <TVFocusGuideView style={styles.controlsBar}>
         <View style={styles.controlsCenter}>
-          {/* Previous */}
+          {/* Previous — reuses next.png flipped horizontally because the
+              repo's prev.png is literally a copy of next.png. Replace with a
+              proper prev asset when available and remove the transform. */}
           <FocusableCard
             onPress={handlePrev}
             style={styles.controlButton}
@@ -243,8 +240,8 @@ const DojoCastSlideshowScreen = () => {
           >
             {() => (
               <Image
-                source={require('../../../assets/icons/prev.png')}
-                style={styles.controlIcon}
+                source={require('../../../assets/icons/next.png')}
+                style={[styles.controlIcon, { transform: [{ scaleX: -1 }] }]}
               />
             )}
           </FocusableCard>
@@ -320,59 +317,6 @@ const styles = StyleSheet.create({
     fontSize: rs(48),
     fontWeight: '700',
     color: 'rgba(255,255,255,0.4)',
-  },
-  canvaPlaceholder: {
-    backgroundColor: '#7C3AED',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: rs(16),
-  },
-  canvaPlaceholderTitle: {
-    fontSize: rs(60),
-    fontWeight: '800',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    paddingHorizontal: rs(48),
-  },
-  canvaPlaceholderSub: {
-    fontSize: rs(30),
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.7)',
-  },
-  slideOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  slideContent: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingBottom: rs(120),
-  },
-  centerText: {
-    alignItems: 'center',
-    paddingHorizontal: wp(10),
-  },
-  slideTitle: {
-    fontSize: rs(72),
-    fontWeight: '900',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    lineHeight: rs(88),
-    textShadowColor: 'rgba(0, 0, 0, 0.6)',
-    textShadowOffset: { width: 0, height: rs(3) },
-    textShadowRadius: rs(8),
-    letterSpacing: 1,
-  },
-  slideSubtitle: {
-    fontSize: rs(36),
-    fontWeight: '400',
-    color: 'rgba(255, 255, 255, 0.85)',
-    textAlign: 'center',
-    marginTop: rs(20),
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: rs(2) },
-    textShadowRadius: rs(6),
   },
   // ── Paused Overlay ──
   pausedOverlay: {

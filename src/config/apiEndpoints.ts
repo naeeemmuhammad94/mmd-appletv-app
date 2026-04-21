@@ -23,6 +23,6 @@ export enum ApiEndpoints {
   // Notice Board (Announcements)
   NoticeBoardForContact = '/notice-board/getNoticeBoardForContact',
 
-  // Dojo Cast
-  DojoCastSlides = '/Setting/dojo-cast-slides',
+  // Dojo Cast (public, unauth — append `/:dojoId` at call site)
+  DojoCastPlaylist = '/dojo-cast/playlist',
 }

@@ -3,7 +3,7 @@
  * Switches endpoints based on the build type without requiring native linking.
  */
 const PROD_API = 'https://dojo-crm-api-new.managemydojo.com/api/v1';
-const STAGING_API = 'https://dojo-crm-api-new.managemydojo.com/api/v1'; // Change to staging when ready
+const STAGING_API = 'https://staging-api.managemydojo.com/api/v1';
 
 export const ENV = {
   API_BASE_URL: __DEV__ ? STAGING_API : PROD_API,

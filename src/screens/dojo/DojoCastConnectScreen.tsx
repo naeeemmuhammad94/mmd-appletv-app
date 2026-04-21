@@ -8,7 +8,10 @@ import { FocusableCard } from '../../components/ui/FocusableCard';
 import { useDojoCastStore } from '../../store/useDojoCastStore';
 import { DojoStackParamList } from '../../navigation';
 import { useExitConfirmation } from '../../hooks/useExitConfirmation';
-import { useDojoCastSlides } from '../../hooks/useDojoCastSlides';
+import { useDojoCastPlaylist } from '../../hooks/useDojoCastPlaylist';
+import { useAuthStore } from '../../store/useAuthStore';
+import { selectDojoId } from '../../utils/authHelpers';
+import { filterAndSortDecks } from '../../utils/dojoCastFilters';
 import FileIcon from '../../../assets/icons/file.svg';
 
 type Nav = NativeStackNavigationProp<DojoStackParamList, 'Connect'>;
@@ -17,9 +20,9 @@ const DojoCastConnectScreen = () => {
   const { theme } = useTheme();
   const navigation = useNavigation<Nav>();
   const setConnectionStatus = useDojoCastStore(s => s.setConnectionStatus);
-  const { data: slidesResponse, isLoading } = useDojoCastSlides();
-
-  const slides = slidesResponse?.data?.items ?? [];
+  const dojoId = useAuthStore(s => selectDojoId(s.user));
+  const { data: playlist, isLoading, isError } = useDojoCastPlaylist(dojoId);
+  const decks = filterAndSortDecks(playlist?.data?.decks ?? []);
 
   useExitConfirmation();
 
@@ -56,9 +59,15 @@ const DojoCastConnectScreen = () => {
       )}
 
       {/* Available slides count */}
-      {slides.length > 0 && (
+      {decks.length > 0 && (
         <Text style={[styles.description, { marginTop: rs(16) }]}>
-          {slides.length} presentation{slides.length !== 1 ? 's' : ''} available
+          {decks.length} presentation{decks.length !== 1 ? 's' : ''} available
+        </Text>
+      )}
+
+      {!isLoading && isError && (
+        <Text style={[styles.description, { marginTop: rs(16) }]}>
+          Couldn't reach server — check connection.
         </Text>
       )}
 
