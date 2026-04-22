@@ -1,10 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { rs } from '../../../theme/responsive';
 import { FocusableCard } from '../../../components/ui/FocusableCard';
 import { useDojoSettingsStore } from '../../../store/useDojoSettingsStore';
-
-const MAX_STORAGE_MB = 500;
 
 interface OfflineCacheSectionProps {
   /** Opt-in hooks for the screen's scoped LEFT-to-tab interceptor. Only the
@@ -19,10 +17,29 @@ const OfflineCacheSection: React.FC<OfflineCacheSectionProps> = ({
   onClearCacheFocus,
   onClearCacheBlur,
 }) => {
-  const { offlineMode, storageUsedMB, toggleOfflineMode, clearCache } =
-    useDojoSettingsStore();
+  const {
+    offlineMode,
+    cachedSlideCount,
+    totalSlideCount,
+    toggleOfflineMode,
+    clearCache,
+  } = useDojoSettingsStore();
 
-  const fillPercent = Math.min(storageUsedMB / MAX_STORAGE_MB, 1);
+  const [isClearing, setIsClearing] = useState(false);
+
+  const fillPercent =
+    totalSlideCount > 0 ? cachedSlideCount / totalSlideCount : 0;
+
+  const storageHeading =
+    totalSlideCount === 0
+      ? 'No slides to cache yet'
+      : `Cached: ${cachedSlideCount} of ${totalSlideCount} slides`;
+
+  const handleClearCache = async () => {
+    setIsClearing(true);
+    await clearCache();
+    setIsClearing(false);
+  };
 
   return (
     <View style={styles.container}>
@@ -65,9 +82,7 @@ const OfflineCacheSection: React.FC<OfflineCacheSectionProps> = ({
       </FocusableCard>
 
       {/* Storage indicator */}
-      <Text style={styles.storageHeading}>
-        Storage used: {storageUsedMB} MB
-      </Text>
+      <Text style={styles.storageHeading}>{storageHeading}</Text>
       <View style={styles.progressTrack}>
         <View style={[styles.progressFill, { flex: fillPercent }]} />
         <View style={{ flex: 1 - fillPercent }} />
@@ -75,15 +90,20 @@ const OfflineCacheSection: React.FC<OfflineCacheSectionProps> = ({
 
       {/* Clear cache button */}
       <FocusableCard
-        onPress={clearCache}
+        onPress={handleClearCache}
         onFocus={onClearCacheFocus}
         onBlur={onClearCacheBlur}
-        style={styles.clearButton}
+        disabled={isClearing}
+        style={[styles.clearButton, isClearing && styles.clearButtonDisabled]}
         focusedStyle={styles.clearButtonFocused}
         wrapperStyle={styles.clearButtonWrapper}
         scaleOnFocus={false}
       >
-        {() => <Text style={styles.clearButtonText}>Clear cached slides</Text>}
+        {() => (
+          <Text style={styles.clearButtonText}>
+            {isClearing ? 'Clearing…' : 'Clear cached slides'}
+          </Text>
+        )}
       </FocusableCard>
       <Text style={styles.helperText}>
         Clearing cache removes offline access
@@ -191,6 +211,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: rs(16),
+  },
+  clearButtonDisabled: {
+    opacity: 0.4,
   },
   clearButtonFocused: {
     borderColor: '#4A90E2',

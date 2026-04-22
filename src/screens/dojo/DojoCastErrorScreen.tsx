@@ -166,7 +166,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#5A8FE4',
     borderColor: '#FFFFFF',
     borderWidth: 3,
-    transform: [{ scale: 1.08 }],
   },
   changeButton: {
     backgroundColor: 'transparent',
@@ -176,7 +175,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderColor: '#FFFFFF',
     borderWidth: 3,
-    transform: [{ scale: 1.08 }],
   },
   actionButtonText: {
     fontSize: rs(26),
@@ -223,7 +221,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#5A9FF2',
     borderColor: '#FFFFFF',
     borderWidth: 3,
-    transform: [{ scale: 1.1 }],
   },
   playIcon: {
     fontSize: rs(36),

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { slideCache } from '../services/slideCache';
 
 interface DojoSettingsState {
   // Playback
@@ -9,7 +10,8 @@ interface DojoSettingsState {
 
   // Offline & Cache
   offlineMode: boolean;
-  storageUsedMB: number;
+  cachedSlideCount: number;
+  totalSlideCount: number;
 
   // Rotation
   rotation: 0 | 90 | 180 | 270;
@@ -19,7 +21,8 @@ interface DojoSettingsState {
   setSlideDuration: (d: 10 | 20 | 30) => void;
   toggleOfflineMode: () => void;
   setRotation: (r: 0 | 90 | 180 | 270) => void;
-  clearCache: () => void;
+  setCacheCounts: (counts: { cached: number; total: number }) => void;
+  clearCache: () => Promise<void>;
 }
 
 export const useDojoSettingsStore = create<DojoSettingsState>()(
@@ -28,14 +31,20 @@ export const useDojoSettingsStore = create<DojoSettingsState>()(
       autoAdvance: true,
       slideDuration: 10,
       offlineMode: true,
-      storageUsedMB: 120,
+      cachedSlideCount: 0,
+      totalSlideCount: 0,
       rotation: 0,
 
       toggleAutoAdvance: () => set(s => ({ autoAdvance: !s.autoAdvance })),
       setSlideDuration: (d: 10 | 20 | 30) => set({ slideDuration: d }),
       toggleOfflineMode: () => set(s => ({ offlineMode: !s.offlineMode })),
       setRotation: (r: 0 | 90 | 180 | 270) => set({ rotation: r }),
-      clearCache: () => set({ storageUsedMB: 0, offlineMode: false }),
+      setCacheCounts: ({ cached, total }: { cached: number; total: number }) =>
+        set({ cachedSlideCount: cached, totalSlideCount: total }),
+      clearCache: async () => {
+        await slideCache.clear();
+        set({ cachedSlideCount: 0 });
+      },
     }),
     {
       name: 'dojo-settings',

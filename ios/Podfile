@@ -6,6 +6,18 @@ require Pod::Executable.execute_command('node', ['-p',
   )', __dir__]).strip
 
 platform :tvos, min_ios_version_supported
+
+# Fabric / New Architecture must be set BEFORE use_native_modules! so that
+# third-party podspecs which read this env var at parse time (e.g.
+# @d11/react-native-fast-image, react-native-svg) take the Fabric branch.
+# Without this the Fabric codegen still generates
+# NSClassFromString(@"FFFastImageViewComponentView") in the components
+# provider, but the pod compiles FFFastImageViewComponentView.mm with its
+# `#ifdef RCT_NEW_ARCH_ENABLED` guard disabled — at runtime the class is
+# missing and RN shows "Unimplemented component: <FastImageView>".
+# use_react_native! sets this later, which is too late for autolinked pods.
+ENV['RCT_NEW_ARCH_ENABLED'] ||= '1'
+
 prepare_react_native_project!
 
 linkage = ENV['USE_FRAMEWORKS']

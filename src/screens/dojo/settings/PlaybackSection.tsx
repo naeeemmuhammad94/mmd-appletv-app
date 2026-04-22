@@ -65,7 +65,7 @@ const PlaybackSection = () => {
         ))}
       </View>
       <Text style={styles.helperText}>
-        Slides advance automatically during dojo display.
+        How long each slide is shown before advancing.
       </Text>
     </View>
   );

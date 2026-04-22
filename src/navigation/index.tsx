@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useTheme } from '../theme';
 import { View, ActivityIndicator, Text } from 'react-native';
 import { rs } from '../theme/responsive';
+import { useDojoCastOfflineSync } from '../hooks/useDojoCastOfflineSync';
 
 // Auth Screens
 import RoleSelectScreen from '../screens/auth/RoleSelectScreen';
@@ -119,6 +120,7 @@ const StudentNavigator = () => {
 };
 
 const DojoNavigator = () => {
+  useDojoCastOfflineSync();
   const { theme } = useTheme();
   return (
     <DojoStack.Navigator

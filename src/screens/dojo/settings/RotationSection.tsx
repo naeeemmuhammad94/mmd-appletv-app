@@ -18,7 +18,7 @@ const RotationSection = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Rotation Section</Text>
+      <Text style={styles.title}>Rotation</Text>
 
       {/* Info card */}
       <View style={styles.infoCard}>

@@ -128,7 +128,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#5A8FE4',
     borderColor: '#FFFFFF',
     borderWidth: 3,
-    transform: [{ scale: 1.08 }],
   },
   selectButtonInner: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,7 +6,13 @@ import {
   Image,
   TVFocusGuideView,
   ActivityIndicator,
+  Dimensions,
 } from 'react-native';
+
+// TV screen dimensions are fixed (Apple TV is always landscape 1920×1080).
+// Captured at module level — no need to re-read on every render.
+const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('screen');
+import FastImage from '@d11/react-native-fast-image';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { rs } from '../../theme/responsive';
@@ -49,13 +55,75 @@ const DojoCastSlideshowScreen = () => {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const slidesLengthRef = useRef(sortedSlides.length);
-  const consecutiveErrorsRef = useRef(0);
 
   useEffect(() => {
     slidesLengthRef.current = sortedSlides.length;
   }, [sortedSlides.length]);
 
   const currentSlide = sortedSlides[currentSlideIndex] ?? null;
+  const currentImageUrl = currentSlide?.imageUrl ?? null;
+
+  // Stable FastImage source + handler refs.
+  //
+  // Background: d11's FastImage (Fabric) calls updateProps on ANY prop change.
+  // updateProps re-constructs a fresh FFFastImageSource and hands it to
+  // setSource:, which does a POINTER compare (not URL compare) and flips
+  // _needsReload=YES on a mismatch — triggering a new SDWebImage download per
+  // render. Combined with the offline-sync hook's re-render storm from
+  // setCacheCounts firings, inline `source={{uri}}` and inline onLoad/onError
+  // arrow functions cause repeated reloads and event firings.
+  //
+  // Memoizing source on the URL string and handlers with useCallback stops
+  // that churn: FastImage only re-renders when the slide actually changes.
+  const imageSource = useMemo(
+    () => (currentImageUrl ? { uri: currentImageUrl } : null),
+    [currentImageUrl],
+  );
+  const handleImageLoad = useCallback(() => {
+    // onLoad is a no-op now that onError no longer drives advancement.
+    // Kept as a stable callback prop so FastImage's updateProps doesn't churn.
+  }, []);
+  const handleImageError = useCallback(() => {
+    // Intentionally does NOT call nextSlide().
+    //
+    // The previous implementation advanced the slide on error, which — under
+    // the render churn described above — fired faster than the autoplay
+    // timer and bypassed isPlaying entirely (making the pause button look
+    // broken). Broken slides now just sit for slideDuration seconds and the
+    // autoplay timer advances past them naturally. If network is fully down,
+    // the operator can press Back / Change Program.
+  }, []);
+
+  // Slide container geometry for rotation.
+  //
+  // CSS transform:rotate() spins around the element's center but leaves its
+  // LAYOUT frame unchanged. A 1920×1080 absoluteFill view rotated 90° stays
+  // reported as 1920×1080 to the layout engine, so the rotated portrait content
+  // (1080 wide × 1920 tall visually) is clipped to those landscape bounds —
+  // giving black bars and cropped text.
+  //
+  // Fix for 90°/270°: size the wrapper to (SCREEN_H × SCREEN_W) BEFORE
+  // rotation and center it on the screen. After rotation the swapped container
+  // aligns perfectly with the 1920×1080 landscape screen.
+  const slideContainerStyle = useMemo(() => {
+    if (rotation === 90 || rotation === 270) {
+      return {
+        position: 'absolute' as const,
+        width: SCREEN_H,
+        height: SCREEN_W,
+        top: (SCREEN_H - SCREEN_W) / 2,
+        left: (SCREEN_W - SCREEN_H) / 2,
+      };
+    }
+    // 0° and 180° keep landscape dimensions — absoluteFill is correct.
+    return StyleSheet.absoluteFill as {
+      position: 'absolute';
+      top: number;
+      left: number;
+      right: number;
+      bottom: number;
+    };
+  }, [rotation]);
 
   // Start playing on mount
   useEffect(() => {
@@ -91,9 +159,6 @@ const DojoCastSlideshowScreen = () => {
   }, [isPlaying, autoAdvance, slideDuration, nextSlide]);
 
   const handlePlayPause = () => {
-    // TEMP DEBUG — remove before ship.
-
-    console.log('[DojoCast] handlePlayPause fired; isPlaying was', isPlaying);
     setPlaying(!isPlaying);
   };
 
@@ -148,34 +213,23 @@ const DojoCastSlideshowScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Slide content — hard cut between slides, no fade. */}
+      {/* Slide content — hard cut between slides, no fade.
+           slideContainerStyle gives 90°/270° rotations the correct pre-rotation
+           dimensions (SCREEN_H × SCREEN_W) so the rotated content fills the
+           landscape screen without black bars or clipping. */}
       <View
         style={[
-          StyleSheet.absoluteFill,
+          slideContainerStyle,
           { transform: [{ rotate: `${rotation}deg` }] },
         ]}
       >
-        {currentSlide ? (
-          <Image
-            source={{ uri: currentSlide.imageUrl }}
+        {imageSource ? (
+          <FastImage
+            source={imageSource}
             style={StyleSheet.absoluteFill}
-            resizeMode="contain"
-            onLoad={() => {
-              consecutiveErrorsRef.current = 0;
-            }}
-            onError={() => {
-              consecutiveErrorsRef.current += 1;
-              if (
-                slidesLengthRef.current > 0 &&
-                consecutiveErrorsRef.current < slidesLengthRef.current
-              ) {
-                nextSlide(slidesLengthRef.current);
-              }
-              // else: every slide errored once this cycle. We stop the
-              // onError-triggered self-advance so we don't infinite-recurse; the
-              // autoplay timer will keep ticking normally through broken images
-              // and the operator can press Back to exit.
-            }}
+            resizeMode={FastImage.resizeMode.contain}
+            onLoad={handleImageLoad}
+            onError={handleImageError}
           />
         ) : (
           <View style={[StyleSheet.absoluteFill, styles.slidePlaceholder]}>
@@ -355,7 +409,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#5A8FE4',
     borderColor: '#FFFFFF',
     borderWidth: 3,
-    transform: [{ scale: 1.08 }],
   },
   pausedButtonOutline: {
     paddingVertical: rs(22),
@@ -369,7 +422,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderColor: '#FFFFFF',
     borderWidth: 3,
-    transform: [{ scale: 1.08 }],
   },
   pausedButtonText: {
     fontSize: rs(28),
@@ -417,7 +469,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#5A9FF2',
     borderColor: '#FFFFFF',
     borderWidth: 3,
-    transform: [{ scale: 1.1 }],
   },
   controlIcon: {
     width: rs(40),

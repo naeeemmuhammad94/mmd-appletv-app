@@ -11,7 +11,7 @@ const AboutSection = () => {
   const ABOUT_ROWS = [
     { label: 'App Version', value: '1.0.3' },
     { label: 'Build', value: '2026.01.14' },
-    { label: 'Google Account', value: email },
+    { label: 'Account', value: email },
     { label: 'Device', value: 'Apple TV \u2013 Dojo Cast' },
   ];
   return (

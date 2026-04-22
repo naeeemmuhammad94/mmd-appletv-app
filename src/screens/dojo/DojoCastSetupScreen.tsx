@@ -4,10 +4,10 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   ImageBackground,
   TVFocusGuideView,
 } from 'react-native';
+import FastImage from '@d11/react-native-fast-image';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme';
@@ -33,13 +33,11 @@ const DojoCastSetupScreen = () => {
   const { selectDeck, selectedDeckId, setCurrentSlideIndex } =
     useDojoCastStore();
   const [focusedCardId, setFocusedCardId] = useState<string | null>(null);
-  const user = useAuthStore(s => s.user);
   const dojoId = useAuthStore(s => selectDojoId(s.user));
   const {
     data: playlist,
     isLoading: slidesLoading,
     isError: slidesError,
-    error: slidesErrorObj,
   } = useDojoCastPlaylist(dojoId);
 
   const decks = useMemo(
@@ -47,32 +45,6 @@ const DojoCastSetupScreen = () => {
     [playlist],
   );
   const hasSlides = decks.length > 0;
-
-  // TEMP DEBUG — remove before ship. Prints at every render.
-  const u = user as any;
-
-  console.log(
-    '[DojoCast debug]',
-    JSON.stringify(
-      {
-        dojoId,
-        userKeys:
-          user && typeof user === 'object' ? Object.keys(user).join(',') : user,
-        user_dojo_id: u?.dojo?._id,
-        user_dojoDetail_id: u?.dojoDetail?._id,
-        user_user_dojo_id: u?.user?.dojo?._id,
-        user_dojoId: u?.dojoId,
-        user_id: u?._id,
-        slidesLoading,
-        slidesError,
-        errorMsg: (slidesErrorObj as any)?.message,
-        rawDeckCount: playlist?.data?.decks?.length ?? 'no-playlist',
-        filteredDeckCount: decks.length,
-      },
-      null,
-      2,
-    ),
-  );
 
   const handleDeckSelect = (deckId: string) => {
     selectDeck(deckId);
@@ -197,10 +169,10 @@ const DojoCastSetupScreen = () => {
                     <View style={styles.programCardInner}>
                       <View style={styles.programImageArea}>
                         {thumb ? (
-                          <Image
+                          <FastImage
                             source={{ uri: thumb }}
                             style={StyleSheet.absoluteFill}
-                            resizeMode="cover"
+                            resizeMode={FastImage.resizeMode.cover}
                           />
                         ) : (
                           <View
@@ -468,7 +440,6 @@ const styles = StyleSheet.create({
   startButtonFocused: {
     borderColor: '#FFFFFF',
     borderWidth: 3,
-    transform: [{ scale: 1.05 }],
   },
   startButtonText: {
     fontSize: rs(34),
