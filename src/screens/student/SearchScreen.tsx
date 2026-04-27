@@ -26,6 +26,7 @@ import { studyService } from '../../services/studyService';
 import { StudyContentItem } from '../../types/study';
 import { useVimeoThumbnails } from '../../hooks/useVimeoThumbnails';
 import { openContent } from '../../utils/openContent';
+import { getMediaType } from '../../utils/getMediaType';
 
 type SearchScreenNavigationProp = NativeStackNavigationProp<
   StudentStackParamList,
@@ -237,6 +238,7 @@ const SearchScreen = () => {
                           'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
                       }}
                       previewUrl={item.contentLink}
+                      mediaType={getMediaType(item.contentLink)}
                       onPress={() => handlePlayContent(item)}
                       style={styles.cardOverride}
                       nextFocusUp={

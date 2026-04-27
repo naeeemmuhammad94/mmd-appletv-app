@@ -27,6 +27,7 @@ import { useWatchHistoryStore } from '../../store/useWatchHistoryStore';
 import { StudyContentItem } from '../../types/study';
 import { useVimeoThumbnails } from '../../hooks/useVimeoThumbnails';
 import { openContent } from '../../utils/openContent';
+import { getMediaType } from '../../utils/getMediaType';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   StudentStackParamList,
@@ -259,6 +260,7 @@ const HomeScreen: React.FC = () => {
                     title={item.title}
                     progress={entry?.progressPercent ?? 0}
                     previewUrl={item.contentLink}
+                    mediaType={getMediaType(item.contentLink)}
                     image={{
                       uri:
                         vimeoThumbnails[item._id] ||

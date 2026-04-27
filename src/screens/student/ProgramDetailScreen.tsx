@@ -31,6 +31,7 @@ import {
   fetchVimeoThumbnail,
 } from '../../utils/resolveVimeoUrl';
 import { openContent } from '../../utils/openContent';
+import { getMediaType } from '../../utils/getMediaType';
 
 type ProgramDetailRouteProp = RouteProp<StudentStackParamList, 'ProgramDetail'>;
 type ProgramDetailNavigationProp = NativeStackNavigationProp<
@@ -393,6 +394,7 @@ const ProgramDetailScreen: React.FC = () => {
               lockMessage=""
               progress={entry?.progressPercent ?? 0}
               previewUrl={lesson.contentLink}
+              mediaType={getMediaType(lesson.contentLink)}
               onPress={tier.locked ? undefined : () => handlePlayPress(lesson)}
             />
           );
@@ -424,6 +426,7 @@ const ProgramDetailScreen: React.FC = () => {
               lockMessage=""
               progress={entry?.progressPercent ?? 0}
               previewUrl={lesson.contentLink}
+              mediaType={getMediaType(lesson.contentLink)}
               onPress={() => handlePlayPress(lesson)}
             />
           );
