@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  Alert,
   BackHandler,
   Pressable,
   findNodeHandle,
@@ -31,6 +30,7 @@ import {
   resolveVimeoUrl,
   fetchVimeoThumbnail,
 } from '../../utils/resolveVimeoUrl';
+import { openContent } from '../../utils/openContent';
 
 type ProgramDetailRouteProp = RouteProp<StudentStackParamList, 'ProgramDetail'>;
 type ProgramDetailNavigationProp = NativeStackNavigationProp<
@@ -337,24 +337,8 @@ const ProgramDetailScreen: React.FC = () => {
 
   const handlePlayPress = (item?: StudyContentItem) => {
     const targetItem = item || programContent[0];
-
-    if (
-      targetItem?.contentLink &&
-      (targetItem.contentLink.includes('vimeo') ||
-        targetItem.contentLink.includes('mp4') ||
-        targetItem.contentLink.includes('m3u8'))
-    ) {
-      navigation.navigate('VideoPlayer', {
-        videoUrl: targetItem.contentLink,
-        title: targetItem.title,
-        contentId: targetItem._id,
-      });
-    } else {
-      Alert.alert(
-        'Unsupported Content',
-        'Documents and interactive WebViews are not natively supported on Apple TV. Please view this content on the mobile app or web portal.',
-        [{ text: 'OK', style: 'cancel' }],
-      );
+    if (targetItem) {
+      openContent(navigation, targetItem);
     }
   };
 

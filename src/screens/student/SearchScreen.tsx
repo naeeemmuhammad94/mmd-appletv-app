@@ -25,6 +25,7 @@ import SearchIcon from '../../../assets/icons/search-icon.svg';
 import { studyService } from '../../services/studyService';
 import { StudyContentItem } from '../../types/study';
 import { useVimeoThumbnails } from '../../hooks/useVimeoThumbnails';
+import { openContent } from '../../utils/openContent';
 
 type SearchScreenNavigationProp = NativeStackNavigationProp<
   StudentStackParamList,
@@ -113,18 +114,7 @@ const SearchScreen = () => {
   };
 
   const handlePlayContent = (item: StudyContentItem) => {
-    if (
-      item?.contentLink &&
-      (item.contentLink.includes('vimeo') ||
-        item.contentLink.includes('mp4') ||
-        item.contentLink.includes('m3u8'))
-    ) {
-      navigation.navigate('VideoPlayer', {
-        videoUrl: item.contentLink,
-        title: item.title,
-        contentId: item._id,
-      });
-    }
+    openContent(navigation, item);
   };
 
   return (
