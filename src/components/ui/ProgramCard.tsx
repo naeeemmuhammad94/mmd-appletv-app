@@ -15,6 +15,8 @@ import PlayButton from '../../../assets/icons/play_button.svg';
 import Video from 'react-native-video';
 import { resolveVimeoUrl } from '../../utils/resolveVimeoUrl';
 import { useStudentSettingsStore } from '../../store/useStudentSettingsStore';
+import { MediaTypeBadge } from '../student/MediaTypeBadge';
+import type { MediaType } from '../../utils/getMediaType';
 
 interface ProgramCardProps {
   title: string;
@@ -30,6 +32,8 @@ interface ProgramCardProps {
   style?: StyleProp<ViewStyle>;
   /** tvOS spatial navigation — passed through to the inner FocusableCard. */
   nextFocusUp?: any;
+  /** Media kind — when 'pdf' or 'image', a corner badge is rendered. */
+  mediaType?: MediaType;
 }
 
 /** Debounce delay before starting a preview */
@@ -49,6 +53,7 @@ export const ProgramCard = forwardRef<any, ProgramCardProps>(
       height = rs(240),
       style,
       nextFocusUp,
+      mediaType,
     },
     ref,
   ) => {
@@ -217,6 +222,7 @@ export const ProgramCard = forwardRef<any, ProgramCardProps>(
                   </View>
                 </View>
               </View>
+              {mediaType ? <MediaTypeBadge type={mediaType} /> : null}
             </View>
           )}
         </View>
