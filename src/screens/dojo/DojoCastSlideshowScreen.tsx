@@ -94,18 +94,18 @@ const DojoCastSlideshowScreen = () => {
     // the operator can press Back / Change Program.
   }, []);
 
-  // Slide container geometry for rotation.
+  // Rotated viewport geometry.
   //
-  // CSS transform:rotate() spins around the element's center but leaves its
-  // LAYOUT frame unchanged. A 1920×1080 absoluteFill view rotated 90° stays
-  // reported as 1920×1080 to the layout engine, so the rotated portrait content
-  // (1080 wide × 1920 tall visually) is clipped to those landscape bounds —
-  // giving black bars and cropped text.
+  // The entire slideshow UI (slide + controls + overlays) lives inside one
+  // rotated viewport. On a physically-rotated TV, this keeps the controls
+  // upright relative to the viewer — matching the "Adjust your slide
+  // orientation to match your screen mounting position" promise in Settings.
   //
-  // Fix for 90°/270°: size the wrapper to (SCREEN_H × SCREEN_W) BEFORE
-  // rotation and center it on the screen. After rotation the swapped container
-  // aligns perfectly with the 1920×1080 landscape screen.
-  const slideContainerStyle = useMemo(() => {
+  // For 90°/270° the pre-rotation dimensions are swapped (SCREEN_H × SCREEN_W)
+  // and the viewport is offset so that after rotation it aligns with the
+  // 1920×1080 landscape screen frame.
+  const rotatedViewportStyle = useMemo(() => {
+    const base = { transform: [{ rotate: `${rotation}deg` }] };
     if (rotation === 90 || rotation === 270) {
       return {
         position: 'absolute' as const,
@@ -113,15 +113,12 @@ const DojoCastSlideshowScreen = () => {
         height: SCREEN_W,
         top: (SCREEN_H - SCREEN_W) / 2,
         left: (SCREEN_W - SCREEN_H) / 2,
+        ...base,
       };
     }
-    // 0° and 180° keep landscape dimensions — absoluteFill is correct.
-    return StyleSheet.absoluteFill as {
-      position: 'absolute';
-      top: number;
-      left: number;
-      right: number;
-      bottom: number;
+    return {
+      ...StyleSheet.absoluteFillObject,
+      ...base,
     };
   }, [rotation]);
 
@@ -213,154 +210,184 @@ const DojoCastSlideshowScreen = () => {
 
   return (
     <View style={styles.container}>
-      {/* Slide content — hard cut between slides, no fade.
-           slideContainerStyle gives 90°/270° rotations the correct pre-rotation
-           dimensions (SCREEN_H × SCREEN_W) so the rotated content fills the
-           landscape screen without black bars or clipping. */}
-      <View
-        style={[
-          slideContainerStyle,
-          { transform: [{ rotate: `${rotation}deg` }] },
-        ]}
-      >
-        {imageSource ? (
-          <FastImage
-            source={imageSource}
-            style={StyleSheet.absoluteFill}
-            resizeMode={FastImage.resizeMode.contain}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-          />
-        ) : (
-          <View style={[StyleSheet.absoluteFill, styles.slidePlaceholder]}>
-            <Text style={styles.slidePlaceholderText}>No slide</Text>
+      {/* Everything below rotates as one unit so controls read upright
+          when the TV is physically rotated. */}
+      <View style={rotatedViewportStyle}>
+        {/* Slide area — fills viewport minus the controls bar at bottom.
+            Branded navy backdrop + subtle dojo logo watermark render
+            here (not at viewport level) so the watermark centers on what
+            the viewer actually sees, not behind the controls bar. */}
+        <View style={styles.slideArea}>
+          <View style={styles.letterboxWatermark}>
+            <Logo
+              width={rs(280)}
+              height={rs(280)}
+              fill="rgba(255, 255, 255, 0.04)"
+            />
           </View>
-        )}
-      </View>
+          {imageSource ? (
+            <FastImage
+              source={imageSource}
+              style={StyleSheet.absoluteFill}
+              resizeMode={FastImage.resizeMode.contain}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+            />
+          ) : (
+            <View style={[StyleSheet.absoluteFill, styles.slidePlaceholder]}>
+              <Text style={styles.slidePlaceholderText}>No slide</Text>
+            </View>
+          )}
+        </View>
 
-      {/* Paused overlay — "Exit Dojo Setup" + "Change Program" buttons */}
-      {!isPlaying && (
-        <View style={styles.pausedOverlay}>
-          <View style={styles.pausedContent}>
-            <Text style={styles.pausedTitle}>Paused</Text>
-            <View style={styles.pausedButtonRow}>
-              <FocusableCard
-                onPress={handleExitSetup}
-                style={styles.pausedButton}
-                focusedStyle={styles.pausedButtonFocused}
-                wrapperStyle={{ flex: 0 }}
-                scaleOnFocus={true}
-              >
-                {() => (
-                  <Text style={styles.pausedButtonText}>Exit Dojo Setup</Text>
-                )}
-              </FocusableCard>
+        {/* Paused overlay — covers the whole viewport so buttons sit
+            centered in the viewer's frame regardless of rotation. */}
+        {!isPlaying && (
+          <View style={styles.pausedOverlay}>
+            <View style={styles.pausedContent}>
+              <Text style={styles.pausedTitle}>Paused</Text>
+              <View style={styles.pausedButtonRow}>
+                <FocusableCard
+                  onPress={handleExitSetup}
+                  style={styles.pausedButton}
+                  focusedStyle={styles.pausedButtonFocused}
+                  wrapperStyle={{ flex: 0 }}
+                  scaleOnFocus={true}
+                >
+                  {() => (
+                    <Text style={styles.pausedButtonText}>Exit Dojo Setup</Text>
+                  )}
+                </FocusableCard>
 
-              <FocusableCard
-                onPress={handleChangeProgram}
-                style={styles.pausedButtonOutline}
-                focusedStyle={styles.pausedButtonOutlineFocused}
-                wrapperStyle={{ flex: 0 }}
-                scaleOnFocus={true}
-              >
-                {() => (
-                  <Text style={styles.pausedButtonText}>Change Program</Text>
-                )}
-              </FocusableCard>
+                <FocusableCard
+                  onPress={handleChangeProgram}
+                  style={styles.pausedButtonOutline}
+                  focusedStyle={styles.pausedButtonOutlineFocused}
+                  wrapperStyle={{ flex: 0 }}
+                  scaleOnFocus={true}
+                >
+                  {() => (
+                    <Text style={styles.pausedButtonText}>Change Program</Text>
+                  )}
+                </FocusableCard>
+              </View>
             </View>
           </View>
-        </View>
-      )}
+        )}
 
-      {/* Bottom Controls Bar */}
-      {/* NOTE: dropped `autoFocus` on this guide view — it re-asserted after
-          re-renders (every slide change), causing focus to jump back to the
-          center button. First FocusableCard still receives focus on mount. */}
-      <TVFocusGuideView style={styles.controlsBar}>
-        <View style={styles.controlsCenter}>
-          {/* Previous — reuses next.png flipped horizontally because the
-              repo's prev.png is literally a copy of next.png. Replace with a
-              proper prev asset when available and remove the transform. */}
-          <FocusableCard
-            onPress={handlePrev}
-            style={styles.controlButton}
-            focusedStyle={styles.controlButtonFocused}
-            wrapperStyle={{
-              flex: 0,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-            scaleOnFocus={true}
-          >
-            {() => (
-              <Image
-                source={require('../../../assets/icons/next.png')}
-                style={[styles.controlIcon, { transform: [{ scaleX: -1 }] }]}
-              />
-            )}
-          </FocusableCard>
-
-          {/* Play / Pause */}
-          <FocusableCard
-            onPress={handlePlayPause}
-            style={styles.playButton}
-            focusedStyle={styles.playButtonFocused}
-            wrapperStyle={{
-              flex: 0,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-            scaleOnFocus={true}
-          >
-            {() =>
-              isPlaying ? (
+        {/* Bottom Controls Bar — sits at the logical bottom of the
+            rotated viewport, so it reads upright for the viewer on a
+            physically-rotated TV. */}
+        {/* NOTE: dropped `autoFocus` on this guide view — it re-asserted after
+            re-renders (every slide change), causing focus to jump back to the
+            center button. First FocusableCard still receives focus on mount. */}
+        <TVFocusGuideView style={styles.controlsBar}>
+          <View style={styles.controlsCenter}>
+            {/* Previous — reuses next.png flipped horizontally because the
+                repo's prev.png is literally a copy of next.png. Replace with a
+                proper prev asset when available and remove the transform. */}
+            <FocusableCard
+              onPress={handlePrev}
+              style={styles.controlButton}
+              focusedStyle={styles.controlButtonFocused}
+              wrapperStyle={{
+                flex: 0,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+              scaleOnFocus={true}
+            >
+              {() => (
                 <Image
-                  source={require('../../../assets/icons/pause.png')}
-                  style={styles.playIcon}
+                  source={require('../../../assets/icons/next.png')}
+                  style={[styles.controlIcon, { transform: [{ scaleX: -1 }] }]}
                 />
-              ) : (
+              )}
+            </FocusableCard>
+
+            {/* Play / Pause */}
+            <FocusableCard
+              onPress={handlePlayPause}
+              style={styles.playButton}
+              focusedStyle={styles.playButtonFocused}
+              wrapperStyle={{
+                flex: 0,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+              scaleOnFocus={true}
+            >
+              {() =>
+                isPlaying ? (
+                  <Image
+                    source={require('../../../assets/icons/pause.png')}
+                    style={styles.playIcon}
+                  />
+                ) : (
+                  <Image
+                    source={require('../../../assets/icons/play.png')}
+                    style={styles.playIcon}
+                  />
+                )
+              }
+            </FocusableCard>
+
+            {/* Next */}
+            <FocusableCard
+              onPress={handleNext}
+              style={styles.controlButton}
+              focusedStyle={styles.controlButtonFocused}
+              wrapperStyle={{
+                flex: 0,
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+              scaleOnFocus={true}
+            >
+              {() => (
                 <Image
-                  source={require('../../../assets/icons/play.png')}
-                  style={styles.playIcon}
+                  source={require('../../../assets/icons/next.png')}
+                  style={styles.controlIcon}
                 />
-              )
-            }
-          </FocusableCard>
+              )}
+            </FocusableCard>
+          </View>
 
-          {/* Next */}
-          <FocusableCard
-            onPress={handleNext}
-            style={styles.controlButton}
-            focusedStyle={styles.controlButtonFocused}
-            wrapperStyle={{
-              flex: 0,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-            scaleOnFocus={true}
-          >
-            {() => (
-              <Image
-                source={require('../../../assets/icons/next.png')}
-                style={styles.controlIcon}
-              />
-            )}
-          </FocusableCard>
-        </View>
-
-        {/* Dojo logo (bottom-right) */}
-        <View style={styles.logoContainer}>
-          <Logo width={rs(48)} height={rs(48)} fill="#FFFFFF" />
-        </View>
-      </TVFocusGuideView>
+          {/* Dojo logo (bottom-right of the controls bar) */}
+          <View style={styles.logoContainer}>
+            <Logo width={rs(48)} height={rs(48)} fill="#FFFFFF" />
+          </View>
+        </TVFocusGuideView>
+      </View>
     </View>
   );
 };
+
+const CONTROLS_BAR_HEIGHT = rs(120);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000000',
+  },
+  // Slide area — stops above the controls bar so controls never overlap
+  // slide content. Branded navy fills any empty space from the
+  // `resizeMode: contain` letterbox, so it looks intentional instead of
+  // raw black on a portrait-mounted TV.
+  slideArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: CONTROLS_BAR_HEIGHT,
+    backgroundColor: '#0F1729',
+  },
+  // Centered dojo logo watermark inside the slide area. Low-opacity
+  // so it reads as backdrop decoration, not a competing element.
+  letterboxWatermark: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   slidePlaceholder: {
     backgroundColor: '#1a1a2e',
@@ -429,12 +456,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   // ── Controls Bar ──
+  // Absolute within the rotated viewport so it lands at the viewer's
+  // "bottom" regardless of rotation.
   controlsBar: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    height: rs(120),
+    height: CONTROLS_BAR_HEIGHT,
     backgroundColor: 'rgba(0, 0, 0, 0.95)',
     flexDirection: 'row',
     alignItems: 'center',
