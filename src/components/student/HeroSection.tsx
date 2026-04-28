@@ -200,9 +200,14 @@ const styles = StyleSheet.create({
     height: rs(600),
     marginBottom: rs(40),
     overflow: 'hidden',
+    // Reserve the 4px focus-border slot in the base layout so the hero
+    // size stays stable when focus arrives — only the border color changes
+    // on focus. Without this, the box grows by 8px on focus and reflows
+    // the Programs row down on Android TV.
+    borderWidth: 4,
+    borderColor: 'transparent',
   },
   containerFocused: {
-    borderWidth: 4,
     borderColor: '#4A90E2',
   },
   inner: {
