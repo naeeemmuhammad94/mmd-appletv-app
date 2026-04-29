@@ -12,9 +12,8 @@ export interface OpenableContent {
  * Dispatch navigation based on the content's URL pattern.
  *
  * - video → VideoPlayer
- * - pdf   → PdfViewer
  * - image → ImageViewer
- * - unknown → no-op (caller is free to ignore unsupported content)
+ * - pdf / unknown → no-op (caller is free to ignore unsupported content)
  */
 export function openContent(
   navigation: NavigationProp<StudentStackParamList>,
@@ -32,9 +31,6 @@ export function openContent(
         title,
         contentId,
       });
-      return;
-    case 'pdf':
-      navigation.navigate('PdfViewer', { url, title, contentId });
       return;
     case 'image':
       navigation.navigate('ImageViewer', { url, title, contentId });

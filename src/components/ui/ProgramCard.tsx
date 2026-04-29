@@ -121,7 +121,13 @@ export const ProgramCard = forwardRef<any, ProgramCardProps>(
             width,
             height,
             borderRadius: rs(10),
-            borderWidth: isFocused ? rs(4) : rs(2),
+            // Reserve a 4px border slot in the layout so focus only changes
+            // the color, not the box size — avoids layout reflow.
+            borderWidth: rs(4),
+            // Color drives the focus visual via the local isFocused state.
+            // Pressable's style({focused}) callback was tried first but is
+            // unreliable on Android TV inside FlatList; the onFocus / onBlur
+            // local-state pattern matches LessonCard which works there.
             borderColor: isFocused
               ? theme.colors.primary
               : 'rgba(100,100,100, 0.5)',
@@ -134,8 +140,6 @@ export const ProgramCard = forwardRef<any, ProgramCardProps>(
             styles.cardContent,
             {
               borderRadius: rs(10),
-              borderWidth: isFocused ? rs(4) : 0,
-              borderColor: isFocused ? theme.colors.primary : 'transparent',
               backgroundColor: variant === 'text-only' ? '#1A1D24' : 'black',
             },
           ]}

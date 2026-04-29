@@ -56,7 +56,8 @@ export const TrainingAreaCard = forwardRef<any, TrainingAreaCardProps>(
             width,
             height,
             borderRadius: rs(10),
-            borderWidth: isFocused ? rs(4) : rs(2),
+            // Reserve a 4px border slot — see ProgramCard for the rationale.
+            borderWidth: rs(4),
             borderColor: isFocused
               ? theme.colors.primary
               : 'rgba(100,100,100, 0.5)',
@@ -69,8 +70,6 @@ export const TrainingAreaCard = forwardRef<any, TrainingAreaCardProps>(
             styles.cardContent,
             {
               borderRadius: rs(10),
-              borderWidth: isFocused ? rs(4) : 0, // Border only on focus
-              borderColor: isFocused ? theme.colors.primary : 'transparent',
               backgroundColor:
                 variant === 'text-only'
                   ? '#1A1D24'
