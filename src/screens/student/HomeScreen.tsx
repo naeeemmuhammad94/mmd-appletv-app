@@ -28,6 +28,7 @@ import { StudyContentItem } from '../../types/study';
 import { useVimeoThumbnails } from '../../hooks/useVimeoThumbnails';
 import { openContent } from '../../utils/openContent';
 import { getMediaType } from '../../utils/getMediaType';
+import { resolveStudentThumbnail } from '../../data/studentThumbnails';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<
   StudentStackParamList,
@@ -203,6 +204,10 @@ const HomeScreen: React.FC = () => {
                 ref={index === 0 ? cardRef : undefined}
                 title={item.name}
                 variant="text-only"
+                // Bundled thumbnail keyed off the program name (case- and
+                // whitespace-insensitive). When undefined, ProgramCard's
+                // text-only variant falls back to its solid dark card.
+                image={resolveStudentThumbnail(item.name)}
                 onPress={() => handleProgramPress(item)}
                 nextFocusUp={refsReady ? heroRef.current : undefined}
               />
@@ -229,6 +234,7 @@ const HomeScreen: React.FC = () => {
                 ref={index === 0 ? cardRef : undefined}
                 title={item.name}
                 variant="text-only"
+                image={resolveStudentThumbnail(item.name)}
                 onPress={() => handleTrainingAreaPress(item)}
                 nextFocusUp={
                   index === 0 && refsReady

@@ -32,7 +32,7 @@ interface ProgramCardProps {
   style?: StyleProp<ViewStyle>;
   /** tvOS spatial navigation — passed through to the inner FocusableCard. */
   nextFocusUp?: any;
-  /** Media kind — when 'pdf' or 'image', a corner badge is rendered. */
+  /** Media kind — when 'image', a corner badge is rendered. */
   mediaType?: MediaType;
 }
 
@@ -145,15 +145,38 @@ export const ProgramCard = forwardRef<any, ProgramCardProps>(
           ]}
         >
           {variant === 'text-only' ? (
-            <View style={styles.textOnlyContainer}>
-              <Text
-                style={styles.textOnlyTitle}
-                numberOfLines={2}
-                ellipsizeMode="tail"
-              >
-                {title.toUpperCase()}
-              </Text>
-            </View>
+            // When a bundled thumbnail is provided, the image itself is the
+            // brand mark (e.g. logo with the program name) — show it fully
+            // contained so the whole logo is visible without cropping.
+            // Programs without a mapped image fall back to the original
+            // solid dark card with the centered title.
+            image ? (
+              // `width/height: '100%'` alongside `flex: 1` is required —
+              // RN tvOS's native Image view otherwise renders at intrinsic
+              // size, leaving `contain` clipped by the parent's overflow
+              // instead of fitting inside the card. Pattern lifted from
+              // ImageViewerScreen which uses `contain` successfully.
+              <Image
+                source={imageSource}
+                style={{
+                  flex: 1,
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: rs(8),
+                }}
+                resizeMode="contain"
+              />
+            ) : (
+              <View style={styles.textOnlyContainer}>
+                <Text
+                  style={styles.textOnlyTitle}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >
+                  {title.toUpperCase()}
+                </Text>
+              </View>
+            )
           ) : (
             /* Default Image Layer */
             <View style={{ flex: 1, backgroundColor: theme.colors.surface }}>

@@ -78,15 +78,38 @@ export const TrainingAreaCard = forwardRef<any, TrainingAreaCardProps>(
           ]}
         >
           {variant === 'text-only' ? (
-            <View style={styles.textOnlyContainer}>
-              <Text
-                style={styles.textOnlyTitle}
-                numberOfLines={2}
-                ellipsizeMode="tail"
-              >
-                {title.toUpperCase()}
-              </Text>
-            </View>
+            // When a bundled thumbnail is provided, the image itself
+            // conveys the training-area name — show it fully contained so
+            // the whole image is visible without cropping. Training areas
+            // without a mapped image fall back to the original solid dark
+            // card with the centered title.
+            image ? (
+              // `width/height: '100%'` alongside `flex: 1` is required —
+              // RN tvOS's native Image view otherwise renders at intrinsic
+              // size, leaving `contain` clipped by the parent's overflow
+              // instead of fitting inside the card. Pattern lifted from
+              // ImageViewerScreen which uses `contain` successfully.
+              <Image
+                source={imageSource}
+                style={{
+                  flex: 1,
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: rs(8),
+                }}
+                resizeMode="contain"
+              />
+            ) : (
+              <View style={styles.textOnlyContainer}>
+                <Text
+                  style={styles.textOnlyTitle}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >
+                  {title.toUpperCase()}
+                </Text>
+              </View>
+            )
           ) : imageSource ? (
             <View style={{ flex: 1, backgroundColor: theme.colors.surface }}>
               <Image
