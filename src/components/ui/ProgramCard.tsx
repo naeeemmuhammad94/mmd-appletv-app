@@ -122,15 +122,11 @@ export const ProgramCard = forwardRef<any, ProgramCardProps>(
             height,
             borderRadius: rs(10),
             // Reserve a 4px border slot in the layout so focus only changes
-            // the color, not the box size — avoids layout reflow.
+            // the color, not the box size — avoids layout reflow. Border is
+            // transparent when unfocused so the card reads as just its
+            // image content; focus is the only thing that paints the ring.
             borderWidth: rs(4),
-            // Color drives the focus visual via the local isFocused state.
-            // Pressable's style({focused}) callback was tried first but is
-            // unreliable on Android TV inside FlatList; the onFocus / onBlur
-            // local-state pattern matches LessonCard which works there.
-            borderColor: isFocused
-              ? theme.colors.primary
-              : 'rgba(100,100,100, 0.5)',
+            borderColor: isFocused ? theme.colors.primary : 'transparent',
           },
           style,
         ]}
@@ -140,7 +136,16 @@ export const ProgramCard = forwardRef<any, ProgramCardProps>(
             styles.cardContent,
             {
               borderRadius: rs(10),
-              backgroundColor: variant === 'text-only' ? '#1A1D24' : 'black',
+              // Text-only with an image: pure black so contain's letterbox
+              // blends with the image's dark edges and the screen behind.
+              // Text-only with no image: dark surface so the centered text
+              // sits on a visible card. Default variant: always black.
+              backgroundColor:
+                variant === 'text-only'
+                  ? image
+                    ? 'black'
+                    : '#1A1D24'
+                  : 'black',
             },
           ]}
         >
@@ -156,16 +161,37 @@ export const ProgramCard = forwardRef<any, ProgramCardProps>(
               // size, leaving `contain` clipped by the parent's overflow
               // instead of fitting inside the card. Pattern lifted from
               // ImageViewerScreen which uses `contain` successfully.
-              <Image
-                source={imageSource}
-                style={{
-                  flex: 1,
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: rs(8),
-                }}
-                resizeMode="contain"
-              />
+              <View style={{ flex: 1 }}>
+                <Image
+                  source={imageSource}
+                  style={{
+                    flex: 1,
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: rs(8),
+                  }}
+                  resizeMode="contain"
+                />
+                <View
+                  style={[
+                    StyleSheet.absoluteFill,
+                    styles.textOnlyImageOverlay,
+                    {
+                      backgroundColor: isFocused
+                        ? 'rgba(0,0,0,0.1)'
+                        : 'rgba(0,0,0,0.4)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={styles.textOnlyImageTitle}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {title}
+                  </Text>
+                </View>
+              </View>
             ) : (
               <View style={styles.textOnlyContainer}>
                 <Text
@@ -322,6 +348,19 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'white',
     textAlign: 'center',
+  },
+  textOnlyImageOverlay: {
+    justifyContent: 'flex-end',
+    padding: rs(16),
+    borderRadius: rs(8),
+  },
+  textOnlyImageTitle: {
+    fontSize: rs(28),
+    fontWeight: 'bold',
+    color: 'white',
+    textShadowColor: 'rgba(0,0,0,0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
 });
 

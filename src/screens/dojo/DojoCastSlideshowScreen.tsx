@@ -171,6 +171,10 @@ const DojoCastSlideshowScreen = () => {
     }
   };
 
+  const handleResume = () => {
+    setPlaying(true);
+  };
+
   const handleExitSetup = () => {
     setConnectionStatus('disconnected');
     setPlaying(false);
@@ -219,11 +223,10 @@ const DojoCastSlideshowScreen = () => {
             the viewer actually sees, not behind the controls bar. */}
         <View style={styles.slideArea}>
           <View style={styles.letterboxWatermark}>
-            <Logo
-              width={rs(280)}
-              height={rs(280)}
-              fill="rgba(255, 255, 255, 0.04)"
-            />
+            {/* The SVG paths are hardcoded to fill="white", so the `fill`
+               prop doesn't propagate. Use SVG-level opacity instead — it
+               applies to the whole tree regardless of per-path fills. */}
+            <Logo width={rs(280)} height={rs(280)} opacity={0.04} />
           </View>
           {imageSource ? (
             <FastImage
@@ -248,15 +251,13 @@ const DojoCastSlideshowScreen = () => {
               <Text style={styles.pausedTitle}>Paused</Text>
               <View style={styles.pausedButtonRow}>
                 <FocusableCard
-                  onPress={handleExitSetup}
+                  onPress={handleResume}
                   style={styles.pausedButton}
                   focusedStyle={styles.pausedButtonFocused}
                   wrapperStyle={{ flex: 0 }}
                   scaleOnFocus={true}
                 >
-                  {() => (
-                    <Text style={styles.pausedButtonText}>Exit Dojo Setup</Text>
-                  )}
+                  {() => <Text style={styles.pausedButtonText}>Resume</Text>}
                 </FocusableCard>
 
                 <FocusableCard
@@ -267,7 +268,21 @@ const DojoCastSlideshowScreen = () => {
                   scaleOnFocus={true}
                 >
                   {() => (
-                    <Text style={styles.pausedButtonText}>Change Program</Text>
+                    <Text style={styles.pausedButtonText}>
+                      Change Slideshow
+                    </Text>
+                  )}
+                </FocusableCard>
+
+                <FocusableCard
+                  onPress={handleExitSetup}
+                  style={styles.pausedButtonOutline}
+                  focusedStyle={styles.pausedButtonOutlineFocused}
+                  wrapperStyle={{ flex: 0 }}
+                  scaleOnFocus={true}
+                >
+                  {() => (
+                    <Text style={styles.pausedButtonText}>Exit DojoCast</Text>
                   )}
                 </FocusableCard>
               </View>

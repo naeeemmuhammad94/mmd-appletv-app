@@ -45,6 +45,7 @@ const ASSETS = {
   sparring: require('../../assets/student/training-area/sparring.png'),
   temple_exercises: require('../../assets/student/training-area/temple_exercises.png'),
   weapons: require('../../assets/student/training-area/weapons.png'),
+  balance_structure: require('../../assets/student/training-area/balance_structure.png'),
 } as const;
 
 type AssetKey = keyof typeof ASSETS;
@@ -123,6 +124,7 @@ const ALIAS_TO_KEY: Record<string, AssetKey> = {
   'temple exercises': 'temple_exercises',
   'temple excercises': 'temple_exercises', // common API misspelling
   weapons: 'weapons',
+  'balance structure': 'balance_structure',
 };
 
 function normalize(s: string): string {

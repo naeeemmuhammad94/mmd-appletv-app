@@ -32,7 +32,7 @@ export const TrainingAreaCard = forwardRef<any, TrainingAreaCardProps>(
       variant = 'default',
       onPress,
       width = rs(250),
-      height = rs(280),
+      height = rs(291),
       nextFocusUp,
     },
     ref,
@@ -58,9 +58,7 @@ export const TrainingAreaCard = forwardRef<any, TrainingAreaCardProps>(
             borderRadius: rs(10),
             // Reserve a 4px border slot — see ProgramCard for the rationale.
             borderWidth: rs(4),
-            borderColor: isFocused
-              ? theme.colors.primary
-              : 'rgba(100,100,100, 0.5)',
+            borderColor: isFocused ? theme.colors.primary : 'transparent',
             backgroundColor: 'transparent', // Handler by inner
           },
         ]}
@@ -89,16 +87,37 @@ export const TrainingAreaCard = forwardRef<any, TrainingAreaCardProps>(
               // size, leaving `contain` clipped by the parent's overflow
               // instead of fitting inside the card. Pattern lifted from
               // ImageViewerScreen which uses `contain` successfully.
-              <Image
-                source={imageSource}
-                style={{
-                  flex: 1,
-                  width: '100%',
-                  height: '100%',
-                  borderRadius: rs(8),
-                }}
-                resizeMode="contain"
-              />
+              <View style={{ flex: 1 }}>
+                <Image
+                  source={imageSource}
+                  style={{
+                    flex: 1,
+                    width: '100%',
+                    height: '100%',
+                    borderRadius: rs(8),
+                  }}
+                  resizeMode="contain"
+                />
+                <View
+                  style={[
+                    StyleSheet.absoluteFill,
+                    styles.textOnlyImageOverlay,
+                    {
+                      backgroundColor: isFocused
+                        ? 'rgba(0,0,0,0.1)'
+                        : 'rgba(0,0,0,0.4)',
+                    },
+                  ]}
+                >
+                  <Text
+                    style={styles.textOnlyImageTitle}
+                    numberOfLines={2}
+                    ellipsizeMode="tail"
+                  >
+                    {title}
+                  </Text>
+                </View>
+              </View>
             ) : (
               <View style={styles.textOnlyContainer}>
                 <Text
@@ -201,7 +220,19 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
   },
-  // ... rest
+  textOnlyImageOverlay: {
+    justifyContent: 'flex-end',
+    padding: rs(16),
+    borderRadius: rs(8),
+  },
+  textOnlyImageTitle: {
+    fontSize: rs(28),
+    fontWeight: 'bold',
+    color: 'white',
+    textShadowColor: 'rgba(0,0,0,0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
 });
 
 export default TrainingAreaCard;

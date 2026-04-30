@@ -15,9 +15,16 @@ import SearchIcon from '../../../assets/icons/search-icon.svg';
 // Shared glass background (matches Figma)
 const GLASS_BG = 'rgba(20, 20, 20, 0.6)';
 const GLASS_BORDER = 'rgba(255, 255, 255, 0.1)';
-// Accent used consistently for focus rings across the app
+// Mirrors theme.colors.primary — kept as a constant so it can be referenced
+// from styles defined outside the component.
 const FOCUS_BLUE = '#4A90E2';
-const FOCUS_BLUE_TINT = 'rgba(74,144,226,0.5)';
+// Tint for focused (non-active) items — kept light (~30%) so the blue
+// border carries the focus signal cleanly without competing with it.
+// The previous 50% tint felt heavy and washed out the border.
+const FOCUS_BLUE_TINT = 'rgba(74,144,226,0.3)';
+// Soft drop-shadow color for focused items — gives a subtle "lift" effect
+// for tvOS-native focus depth. Matches the blue accent.
+const FOCUS_GLOW = 'rgba(74,144,226,0.6)';
 
 interface HomeHeaderProps {
   onTabChange?: (tab: 'Curriculum' | 'Announcements') => void;
@@ -231,6 +238,11 @@ const styles = StyleSheet.create({
     borderColor: FOCUS_BLUE,
     backgroundColor: FOCUS_BLUE_TINT,
     transform: [{ scale: 1.1 }],
+    shadowColor: FOCUS_GLOW,
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
   // Tabs — hug content with padding. 3px transparent border keeps layout
   // stable when the focused state swaps to a colored border.
@@ -242,7 +254,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   activeTab: {
-    backgroundColor: '#3B82F6',
+    backgroundColor: FOCUS_BLUE,
   },
   // Active tab + focused — bright white ring on top of the blue fill so it
   // stands out clearly against the blue.
@@ -270,7 +282,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   inactiveTabText: {
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.7)',
   },
 
   // ── Settings ──
@@ -293,6 +305,11 @@ const styles = StyleSheet.create({
     backgroundColor: FOCUS_BLUE_TINT,
     borderColor: FOCUS_BLUE,
     transform: [{ scale: 1.08 }],
+    shadowColor: FOCUS_GLOW,
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
   settingsIcon: {
     color: 'rgba(255,255,255,0.85)',
